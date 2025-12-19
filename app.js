@@ -227,25 +227,36 @@ require([
       console.error("Flood layer failed to load:", error);
     });
 
+    // // Zoom to fire threat once it’s ready
+    // floodLayer.when().then(function () {
+    //   if (floodLayer.fullExtent) {
+    //     view.goTo(floodLayer.fullExtent.expand(1.1)).catch(() => {});
+    //   }
+    // }).catch(function (error) {
+    //   console.error("Flood layer failed to load:", error);
+    // });
+
     // Optional: explicitly confirm ordering
     webmap.when().then(function () {
       // Neighbourhoods on very top
       webmap.reorder(neighbourhoodsLayer, webmap.layers.length - 1);
-      // Flood outline below neighbourhoods
+      // Wildfire risk
       webmap.reorder(floodExtentLayer, webmap.layers.length - 2);
+      // Flood outline below neighbourhoods
+      webmap.reorder(floodExtentLayer, webmap.layers.length - 3);
       // Flood raster below both
-      webmap.reorder(floodLayer, webmap.layers.length - 3);
+      webmap.reorder(floodLayer, webmap.layers.length - 4);
     });
   });
 
   // --- UI toggles ---
 
-  const floodToggle = document.getElementById("floodToggle");
-  if (floodToggle) {
-    floodToggle.addEventListener("change", function (event) {
-      floodLayer.visible = event.target.checked;
-    });
-  }
+  // const floodToggle = document.getElementById("floodToggle");
+  // if (floodToggle) {
+  //   floodToggle.addEventListener("change", function (event) {
+  //     floodLayer.visible = event.target.checked;
+  //   });
+  // }
 
   const floodOutlineToggle = document.getElementById("floodOutlineToggle");
   if (floodOutlineToggle) {
