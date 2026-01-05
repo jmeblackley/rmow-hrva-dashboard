@@ -622,7 +622,7 @@ function setupVisibilityListeners(config) {
       }
     },
     opacity: 1,
-    popupEnabled: true
+    popupEnabled: false
   });
 
   // ============================ WILDFIRE LAYERS =============================
@@ -778,26 +778,26 @@ const fireDepartmentLayer = new FeatureLayer({
     // Removed labelingInfo to restore default neighbourhood labels and avoid
     // breaking pop-ups. This section can be re-enabled once the correct
     // field name for neighbourhood names is confirmed.
-    // labelingInfo: [
-    //   {
-    //     labelExpressionInfo: {
-    //       // Attempt to rename the Wedgewoods neighbourhood to Heliport. Replace `Name` with actual field name if different.
-    //       expression: "IIF($feature.Name == 'Wedgewoods', 'Heliport', $feature.Name)"
-    //     },
-    //     symbol: {
-    //       type: "text",
-    //       color: [80, 80, 80, 0.9],
-    //       haloSize: 1,
-    //       haloColor: [255, 255, 255, 0.9],
-    //       font: {
-    //         family: "sans-serif",
-    //         size: 10,
-    //         weight: "normal"
-    //       }
-    //     },
-    //     labelPlacement: "center-center"
-    //   }
-    // ]
+     labelingInfo: [
+       {
+         labelExpressionInfo: {
+           // Attempt to rename the Wedgewoods neighbourhood to Heliport. Replace `Name` with actual field name if different.
+           expression: "IIF($feature.ASSETNAME == 'Wedgewoods', 'Heliport', $feature.Name)"
+         },
+         symbol: {
+           type: "text",
+           color: [80, 80, 80, 0.9],
+           haloSize: 1,
+           haloColor: [255, 255, 255, 0.9],
+           font: {
+             family: "sans-serif",
+             size: 10,
+             weight: "normal"
+           }
+         },
+         labelPlacement: "center-center"
+       }
+     ]
   });
 
   // --- RMOW Boundary: subtle outline, no fill (always on; not in toggle panel) ---
