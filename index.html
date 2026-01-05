@@ -11,6 +11,8 @@
     href="https://js.arcgis.com/4.30/esri/themes/light/main.css"
   />
   <script src="https://js.arcgis.com/4.30/"></script>
+  <script type="module" src="https://js.arcgis.com/calcite-components/3.3.3/calcite.esm.js"></script>
+  <link rel="stylesheet" type="text/css" href="https://js.arcgis.com/calcite-components/2.13.2/calcite.css" />
 
   <style>
     :root {
@@ -121,6 +123,36 @@
       color: var(--muted);
     }
 
+    .info-panel {
+      position: absolute;
+      right: 1.1rem;
+      top: 1.1rem;
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid var(--border);
+      padding: 0.6rem 0.8rem;
+      border-radius: 0.4rem;
+      font-size: 0.85rem;
+      backdrop-filter: blur(2px);
+      max-height: 60vh;
+      max-width: 40vh;
+      display: none; /* Controlled by JS */
+      flex-direction: column;
+    }
+
+    #infoPanel {
+      height: 100%;     /* Force panel to fill the 60vh wrapper */
+      overflow: hidden; /* Prevent the panel itself from leaking */
+      display: flex,
+      flex-direction: colmn,
+    /* This targets the internal scrollable area of the Calcite Panel */
+      --calcite-panel-content-height: auto;
+      --calcite-shell-panel-width: 100%;
+    }
+
+    #infoPanel ::part(content-wrapper) {
+      overflow-y: auto;
+    }
+
     .toggle-row {
       display: flex;
       flex-direction: column;
@@ -137,6 +169,14 @@
 
     .toggle-row input[type="checkbox"] {
       accent-color: var(--whistler-blue);
+    }
+
+    .bottom-center-scalebar {
+      position: absolute;
+      left: 50%;
+      bottom: 25px;
+      transform: translateX(-50%);
+      z-index: 35; /* above map, below popups */
     }
 
     /* --- LGeo logo (bottom-right) --- */
@@ -174,6 +214,42 @@
         height: 64px;
       }
     }
+
+    .layer-row {
+      display: flex;
+      flex-direction: row;
+      align-items: center;    /* Vertical center for all children */
+      gap: 15px;               /* Small space between icon and checkbox */
+      padding: 2px 0;
+      width: 100%;
+    }
+
+    /* THE FIX: Remove the default margin that offsets the line */
+    .layer-row calcite-label {
+      margin: 0 !important;   
+      display: flex;
+      align-items: center;
+      gap: 8px;               /* Space between checkbox and text */
+    }
+
+    /* Ensure the action doesn't have internal padding pushing it down */
+    .layer-row calcite-action {
+      --calcite-ui-icon-color: #666; /* Optional: Tone down the icon color */
+      margin: 0;
+      transform: translateY(-6.5px);
+      height: 18px;
+      width: 18px;
+    }
+
+    .layer-row calcite-action.info-active {
+      --calcite-ui-icon-color: #007ac2 !important; /* Forces the blue color */
+    }
+
+    calcite-checkbox {
+      vertical-align: middle;
+    }
+
+ 
   </style>
 </head>
 <body>
@@ -195,16 +271,16 @@
   <main class="layout">
     <div id="viewDiv"></div>
 
-    <!-- Simple overlay controls in the spirit of your legend box -->
-    <section class="corner-panel">
-      <h2>Layers</h2>
-      <div class="toggle-row">
-        <label>
-          <input type="checkbox" id="floodToggle" checked />
-          <span>Flood hazard</span>
-        </label>
+    <div class="info-panel">
+      <calcite-panel heading="Layer Details" id="infoPanel" closable>
+      </calcite-panel>
+    </div> 
 
-      </div>
+    <div class="corner-panel">
+      <calcite-panel heading="Layer Controls" id="layerPanel" collapsible>
+      </calcite-panel>
+    </div>    
+
     </section>
 
     <!-- LGeo logo watermark (LGeo-logo_vert.png in repo root) -->
