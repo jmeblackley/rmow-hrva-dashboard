@@ -65,16 +65,16 @@ const rockfall = ["#f9eedd00", "#dea183ff", "#cd7C58ff", "#ba5632ff"]
 const debris = ["#44015400", "#48247540", "#41448780", "#355f8dbf", "#2a788eff", "#21918cff", "#22a884ff", "#44bf70ff", "#7ad151ff", "#bddf26ff", "#fde725ff"];
 const dry = ["#543005ff", "#8c510aff", "#bf812dff", "#dfc27dff", "#f6e8c3ff", "#f5f5f500", "#c7eae5ff", "#80cdc1ff", "#35978fff", "#01665eff", "#003c30ff"];
 
-// Improved sequential five‑class palettes for vulnerability layers (light → dark)
-// To improve perceptual contrast and clarity, each palette below has been tuned
-// to maximise differences between adjacent classes while maintaining a unified hue.
-// These palettes were derived by blending discrete ColourBrewer schemes and
-// adjusting the darkest shade for better differentiation at high values.
-const palPurples5 = ["#efe6ff", "#cabcf2", "#9e8fd3", "#6a6ba5", "#42315e"]; // seniors
-const palBlues5   = ["#eff6ff", "#c7dcef", "#8ab5d6", "#5f8dbc", "#346ba2"]; // children
-const palReds5    = ["#feeae9", "#fcb4b0", "#f66c6b", "#d93241", "#a61522"]; // low income
-const palGreens5  = ["#e9f7ef", "#c7e9d2", "#8ccda0", "#57ab7a", "#256f52"]; // living alone
-const palOranges5 = ["#fff0e5", "#ffd3b8", "#ffa574", "#ef6c3d", "#b94017"]; // renters
+// Sequential five‑class palettes for vulnerability layers (light → dark)
+// These palettes are derived from ColorBrewer (https://colorbrewer2.org/) and
+// provide consistent hues across different categories. Each array contains
+// five colours, corresponding to the five classes produced by the quantile
+// breaks in vulnerabilityConfigs.
+const palPurples5 = ["#f2f0f7", "#cbc9e2", "#9e9ac8", "#756bb1", "#54278f"]; // seniors
+const palBlues5   = ["#eff3ff", "#bdd7e7", "#6baed6", "#3182bd", "#08519c"]; // children
+const palReds5    = ["#fee5d9", "#fcae91", "#fb6a4a", "#de2d26", "#a50f15"]; // low income
+const palGreens5  = ["#edf8e9", "#bae4b3", "#74c476", "#31a354", "#006d2c"]; // living alone
+const palOranges5 = ["#feedde", "#fdbe85", "#fd8d3c", "#e6550d", "#a63603"]; // renters
 
 
 require([
@@ -227,61 +227,104 @@ require([
    * @param {Array} config - An array of group objects (uiMappings).
    * @param {string} containerId - The ID of the container element to render into.
    */
-  function renderLayerControls(config, containerId) {
-    const container = document.getElementById(containerId);
-    let html = `<calcite-accordion>`;
+  
+function renderLayerControls(config, containerId) {
+  const container = document.getElementById(containerId);
 
-    config.forEach(group => {
-      // Determine if any layer in the group is currently visible to expand
-      const isGroupVisible = group.items.some(item => {
-        return item.layers.some(layer => layer && layer.visible === true);
-      });
-      const expanded = isGroupVisible ? " expanded" : "";
-      html += `<calcite-accordion-item heading="${group.category}"${expanded}>`;
-      group.items.forEach(item => {
-        const layerVis = item.layers.some(layer => layer && layer.visible === true);
-        const checked = layerVis ? " checked" : "";
-        html += `
-          <div class="layer-row">
-            <calcite-action icon="information" id="info-${item.id}" text="More Info" appearance="transparent" scale="s"></calcite-action>
-            <calcite-label layout="inline">
-              <calcite-checkbox id="${item.id}"${checked}></calcite-checkbox>
-              ${item.label}
-            </calcite-label>
-          </div>`;
-      });
-      html += `</calcite-accordion-item>`;
+  // Clear-all button + legend hint + accordion container
+  let html = `
+    <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:8px;">
+      <calcite-button id="clearAllTogglesBtn" width="full" appearance="outline" icon-start="trash">
+        Clear all
+      </calcite-button>
+      <div style="font-size:0.75rem; color:var(--muted); display:flex; align-items:center; gap:4px; margin-top:2px;">
+        <calcite-icon icon="information" scale="s"></calcite-icon>
+        <span>Click the (i) icon to view a layer's legend</span>
+      </div>
+    </div>
+    <calcite-accordion>
+  `;
+
+  config.forEach(group => {
+    // Determine if any layer in the group is currently visible to expand
+    const isGroupVisible = group.items.some(item =>
+      item.layers.some(layer => layer && layer.visible === true)
+    );
+    const expanded = isGroupVisible ? " expanded" : "";
+    html += `<calcite-accordion-item heading="${group.category}"${expanded}>`;
+
+    group.items.forEach(item => {
+      const layerVis = item.layers.some(layer => layer && layer.visible === true);
+      const checked = layerVis ? " checked" : "";
+      html += `
+        <div class="layer-row">
+          <calcite-action icon="information" id="info-${item.id}" text="More Info" appearance="transparent" scale="s"></calcite-action>
+          <calcite-label layout="inline">
+            <calcite-checkbox id="${item.id}"${checked}></calcite-checkbox>
+            ${item.label}
+          </calcite-label>
+        </div>`;
     });
-    html += `</calcite-accordion>`;
-    container.innerHTML = html;
-    // After injecting HTML, bind your events
-    setupVisibilityListeners(config);
-  }
 
-  /**
-   * Iterates over the UI configuration and attaches change listeners to
-   * checkboxes.  When a user toggles a checkbox the corresponding layers'
-   * visibility is updated.
-   *
-   * @param {Array} config - The same configuration used to build the UI.
-   */
-  function setupVisibilityListeners(config) {
-    config.forEach(group => {
-      group.items.forEach(item => {
-        const checkbox = document.getElementById(item.id);
-        if (checkbox) {
-          checkbox.addEventListener("calciteCheckboxChange", (event) => {
-            const isVisible = event.target.checked;
-            item.layers.forEach(lyr => {
-              if (lyr) lyr.visible = isVisible;
-            });
-          });
-        }
+    html += `</calcite-accordion-item>`;
+  });
+
+  html += `</calcite-accordion>`;
+  container.innerHTML = html;
+
+  // Bind events (checkbox listeners + clear-all)
+  setupVisibilityListeners(config);
+
+  const clearBtn = document.getElementById("clearAllTogglesBtn");
+  if (clearBtn) {
+    clearBtn.addEventListener("click", () => clearAllToggles(config));
+  }
+}
+
+/**
+ * Clears all toggles:
+ * - unchecks every checkbox
+ * - hides all layers represented in the toggle panel
+ */
+function clearAllToggles(config) {
+  config.forEach(group => {
+    group.items.forEach(item => {
+      // Hide layers
+      item.layers.forEach(lyr => {
+        if (lyr) lyr.visible = false;
+      });
+
+      // Uncheck UI control
+      const checkbox = document.getElementById(item.id);
+      if (checkbox) checkbox.checked = false;
+    });
+  });
+}
+
+/**
+ * Iterates over the UI configuration and attaches change listeners to
+ * checkboxes.  When a user toggles a checkbox the corresponding layers'
+ * visibility is updated.
+ *
+ * @param {Array} config - The same configuration used to build the UI.
+ */
+function setupVisibilityListeners(config) {
+  config.forEach(group => {
+    group.items.forEach(item => {
+      const checkbox = document.getElementById(item.id);
+      if (!checkbox) return;
+
+      checkbox.addEventListener("calciteCheckboxChange", (event) => {
+        const isVisible = event.target.checked;
+        item.layers.forEach(lyr => {
+          if (lyr) lyr.visible = isVisible;
+        });
       });
     });
-  }
+  });
+}
 
-  // Keep this variable outside of the listeners so we can remove the watch when closing
+// Keep this variable outside of the listeners so we can remove the watch when closing
   let visibilityWatcher = null;
 
   /**
@@ -434,9 +477,9 @@ require([
   }
   // They will be invoked later on the updated uiMappings.
 
-  // ==========================================================================
+  // ===========================================================================
   //                        HAZARD LAYER DEFINITIONS 
-  // ==========================================================================
+  // ===========================================================================
 
   // ============================ SMOKE LAYER =============================
   const smokeLayer = new ImageryTileLayer({
@@ -561,7 +604,8 @@ require([
     renderer: floodRenderer,
     opacity: 1,
     visible: true,
-    title: "Flood hazard"
+    // Update the flood layer title to clarify return period and clear-water nature
+    title: "Clear-water Flood hazard (200-year event)"
   });
   const floodExtentLayer = new FeatureLayer({
     portalItem: { id: FLOOD_OUTLINE_ITEM_ID },
@@ -614,33 +658,36 @@ require([
 // ============================ COMMUNITY POINTS LAYERS =============================
 // These layers represent various points of interest and facilities such as
 // critical infrastructure, schools, police stations, medical centres, etc.
-// They are pulled from the "points" group layer within the webmap item
-// defined by POINTS_ITEM_ID.  By not specifying a renderer, the layers
-// inherit their symbology from the portal item.  Popups are already formatted
-// in the webmap, so we enable popups and leave other defaults.
+// They are pulled from the feature service identified by POINTS_ITEM_ID.
+// We apply explicit simple-marker renderers so symbols remain visible and
+// consistent across all zoom levels.
+
+function makePointRenderer(colorRGBA) {
+  return {
+    type: "simple",
+    symbol: {
+      type: "simple-marker",
+      style: "circle",
+      size: 16,
+      color: colorRGBA,
+      outline: {
+        color: [255, 255, 255, 0.95],
+        width: 1.2
+      }
+    }
+  };
+}
 
 const criticalInfrastructureLayer = new FeatureLayer({
   portalItem: { id: POINTS_ITEM_ID },
   layerId: 4,
   title: "Critical Infrastructure",
   visible: false,
+  opacity: 1,
   popupEnabled: true,
-  // Custom renderer to enlarge point symbols and assign a distinct colour
-  renderer: {
-    type: "simple",
-    symbol: {
-      type: "simple-marker",
-      style: "circle",
-      size: 10,
-      color: [123, 50, 148, 0.9],     // purple
-      outline: {
-        color: [255, 255, 255, 0.8],
-        width: 0.8
-      }
-    }
-  },
-  // Display at all scales
-  minScale: 0
+  renderer: makePointRenderer([123, 50, 148, 0.95]), // purple
+  minScale: 0,
+  maxScale: 0
 });
 
 const pointsOfInterestLayer = new FeatureLayer({
@@ -648,21 +695,11 @@ const pointsOfInterestLayer = new FeatureLayer({
   layerId: 5,
   title: "Points of Interest",
   visible: false,
+  opacity: 1,
   popupEnabled: true,
-  renderer: {
-    type: "simple",
-    symbol: {
-      type: "simple-marker",
-      style: "circle",
-      size: 10,
-      color: [255, 217, 47, 0.9],     // gold
-      outline: {
-        color: [255, 255, 255, 0.8],
-        width: 0.8
-      }
-    }
-  },
-  minScale: 0
+  renderer: makePointRenderer([255, 217, 47, 0.95]), // gold
+  minScale: 0,
+  maxScale: 0
 });
 
 const schoolLayer = new FeatureLayer({
@@ -670,21 +707,11 @@ const schoolLayer = new FeatureLayer({
   layerId: 6,
   title: "School",
   visible: false,
+  opacity: 1,
   popupEnabled: true,
-  renderer: {
-    type: "simple",
-    symbol: {
-      type: "simple-marker",
-      style: "circle",
-      size: 10,
-      color: [49, 163, 84, 0.9],        // green
-      outline: {
-        color: [255, 255, 255, 0.8],
-        width: 0.8
-      }
-    }
-  },
-  minScale: 0
+  renderer: makePointRenderer([49, 163, 84, 0.95]), // green
+  minScale: 0,
+  maxScale: 0
 });
 
 const policeStationLayer = new FeatureLayer({
@@ -692,21 +719,11 @@ const policeStationLayer = new FeatureLayer({
   layerId: 7,
   title: "Police Station",
   visible: false,
+  opacity: 1,
   popupEnabled: true,
-  renderer: {
-    type: "simple",
-    symbol: {
-      type: "simple-marker",
-      style: "circle",
-      size: 10,
-      color: [55, 126, 184, 0.9],     // blue
-      outline: {
-        color: [255, 255, 255, 0.8],
-        width: 0.8
-      }
-    }
-  },
-  minScale: 0
+  renderer: makePointRenderer([55, 126, 184, 0.95]), // blue
+  minScale: 0,
+  maxScale: 0
 });
 
 const medicalCentreLayer = new FeatureLayer({
@@ -714,21 +731,11 @@ const medicalCentreLayer = new FeatureLayer({
   layerId: 8,
   title: "Medical Centre",
   visible: false,
+  opacity: 1,
   popupEnabled: true,
-  renderer: {
-    type: "simple",
-    symbol: {
-      type: "simple-marker",
-      style: "circle",
-      size: 10,
-      color: [228, 26, 28, 0.9],       // red
-      outline: {
-        color: [255, 255, 255, 0.8],
-        width: 0.8
-      }
-    }
-  },
-  minScale: 0
+  renderer: makePointRenderer([228, 26, 28, 0.95]), // red
+  minScale: 0,
+  maxScale: 0
 });
 
 const fireDepartmentLayer = new FeatureLayer({
@@ -736,28 +743,19 @@ const fireDepartmentLayer = new FeatureLayer({
   layerId: 9,
   title: "Fire Department",
   visible: false,
+  opacity: 1,
   popupEnabled: true,
-  renderer: {
-    type: "simple",
-    symbol: {
-      type: "simple-marker",
-      style: "circle",
-      size: 10,
-      color: [255, 127, 0, 0.9],       // orange
-      outline: {
-        color: [255, 255, 255, 0.8],
-        width: 0.8
-      }
-    }
-  },
-  minScale: 0
+  renderer: makePointRenderer([255, 127, 0, 0.95]), // orange
+  minScale: 0,
+  maxScale: 0
 });
 
 // ============================================================================
-//                        BASEMAP LAYER DEFINITIONS 
+//                        BASEMAP LAYER DEFINITIONS
+
 // ============================================================================
 
-  // --- Neighbourhoods: transparent fill, blue outline ---
+  // --- Neighbourhoods: transparent fill, neutral grey outline ---
   const neighbourhoodsLayer = new FeatureLayer({
     portalItem: { id: NEIGHBOURHOOD_ITEM_ID },
     layerId: 12,
@@ -768,19 +766,78 @@ const fireDepartmentLayer = new FeatureLayer({
         type: "simple-fill",
         color: [0, 0, 0, 0],
         outline: {
-          color: [20, 33, 94, 1],
+          // Use a neutral grey to differentiate from flood outlines
+          color: [150, 150, 150, 1],
           width: 1
         }
       }
     },
     opacity: 1,
-    popupEnabled: true
+    popupEnabled: true,
+    // Optional: override neighbourhood labels; rename Wedgewoods to Heliport if field exists
+    // Removed labelingInfo to restore default neighbourhood labels and avoid
+    // breaking pop-ups. This section can be re-enabled once the correct
+    // field name for neighbourhood names is confirmed.
+    // labelingInfo: [
+    //   {
+    //     labelExpressionInfo: {
+    //       // Attempt to rename the Wedgewoods neighbourhood to Heliport. Replace `Name` with actual field name if different.
+    //       expression: "IIF($feature.Name == 'Wedgewoods', 'Heliport', $feature.Name)"
+    //     },
+    //     symbol: {
+    //       type: "text",
+    //       color: [80, 80, 80, 0.9],
+    //       haloSize: 1,
+    //       haloColor: [255, 255, 255, 0.9],
+    //       font: {
+    //         family: "sans-serif",
+    //         size: 10,
+    //         weight: "normal"
+    //       }
+    //     },
+    //     labelPlacement: "center-center"
+    //   }
+    // ]
   });
+
+  // --- RMOW Boundary: subtle outline, no fill (always on; not in toggle panel) ---
+  const rmowBoundaryLayer = new FeatureLayer({
+    portalItem: { id: POINTS_ITEM_ID },
+    layerId: 11,
+    title: "RMOW Boundary",
+    opacity: 1,
+    visible: true,
+    popupEnabled: false,
+    renderer: {
+      type: "simple",
+      symbol: {
+        type: "simple-fill",
+        color: [0, 0, 0, 0],
+        outline: {
+          color: [120, 120, 120, 0.35],
+          width: 1
+        }
+      }
+    }
+  });
+
+  // --- Building footprints: transparent fill with dark outline ---
   const buildingsLayer = new FeatureLayer({
     portalItem: { id: BUILDINGS_ITEM_ID },
     title: "Building Footprints",
     opacity: 1,
-    popupEnabled: true
+    popupEnabled: false,
+    renderer: {
+      type: "simple",
+      symbol: {
+        type: "simple-fill",
+        color: [0, 0, 0, 0], // transparent interior
+        outline: {
+          color: [0, 0, 0, 0.6],
+          width: 0.7
+        }
+      }
+    }
   });
 
   // ============================================================================
@@ -884,7 +941,7 @@ const fireDepartmentLayer = new FeatureLayer({
       label: "Living Alone (%)",
       field: "__living_alone",
       // Living‑alone quintile breaks (approximate) matching renter distribution
-      breaks: [0, 8.7, 11, 13, 13.5, 17.3],
+      breaks: [0, 28.1, 37.4, 47.4, 57.2, 81.1],
       colors: palGreens5,
       visible: false
     }
@@ -904,7 +961,7 @@ const fireDepartmentLayer = new FeatureLayer({
     title: "DA boundaries (popups)",
     opacity: 0,
     visible: true,
-    popupEnabled: true,
+    popupEnabled: false,
     renderer: {
       type: "simple",
       symbol: {
@@ -912,7 +969,7 @@ const fireDepartmentLayer = new FeatureLayer({
         color: [0, 0, 0, 0],
         outline: {
           color: [120, 120, 120, 0.6],
-          width: 0.8
+          width: 1.2
         }
       }
     },
@@ -969,7 +1026,7 @@ const fireDepartmentLayer = new FeatureLayer({
       renderer: renderer,
       opacity: 0.9,
       visible: cfg.visible,
-      popupEnabled: true,
+      popupEnabled: false,
       popupTemplate: {
         title: "Dissemination Area",
         content: [
@@ -1013,15 +1070,23 @@ const fireDepartmentLayer = new FeatureLayer({
     vulnerabilityLayers.push(layer);
   });
 
-  // ==========================================================================
+  // ===========================================================================
   //                        Build layers and toggles
-  // ==========================================================================
+  // ===========================================================================
   // Add layers in desired order.  Vulnerability layers and the outline layer
   // are inserted before flood layers so they appear on top of basemap and
   // hazard layers but below flood overlays.
   layerOrder = [
-    buildingsLayer,
+    // Ensure neighbourhood polygons sit above buildings so their pop‑ups remain accessible
     neighbourhoodsLayer,
+    buildingsLayer,
+    rmowBoundaryLayer,
+    criticalInfrastructureLayer,
+    pointsOfInterestLayer,
+    schoolLayer,
+    policeStationLayer,
+    medicalCentreLayer,
+    fireDepartmentLayer,
     smokeLayer,
     rockfallLayer,
     debrisLayer,
@@ -1034,15 +1099,12 @@ const fireDepartmentLayer = new FeatureLayer({
     ...vulnerabilityLayers,
     vulnerabilityOutlineLayer,
     // Community points layers are drawn on top of vulnerability polygons so they remain clickable
-    criticalInfrastructureLayer,
-    pointsOfInterestLayer,
-    schoolLayer,
-    policeStationLayer,
-    medicalCentreLayer,
-    fireDepartmentLayer,
     dikesLayer,
     floodExtentLayer,
     floodLayer,
+    // Community points layers drawn at the top
+
+
   ];
   webmap.addMany(layerOrder);
 
@@ -1126,7 +1188,7 @@ const fireDepartmentLayer = new FeatureLayer({
       ]
     },
     {
-      category: "Vulnerability",
+      category: "Vulnerability Layers",
       items: [
         // Generate a toggle for each vulnerability variable
         ...vulnerabilityConfigs.map(cfg => ({
@@ -1153,7 +1215,7 @@ const fireDepartmentLayer = new FeatureLayer({
       category: "Flooding",
       items: [
         { id: "dikesToggle", layers: [dikesLayer], label: "Flood Protection Dikes", info: ""},
-        { id: "floodToggle", layers: [floodLayer, floodExtentLayer], label: "Flood hazard", info: ""}
+        { id: "floodToggle", layers: [floodLayer, floodExtentLayer], label: "Clear-water Flood hazard (200-year event)", info: ""}
       ]
     },
   ];  
