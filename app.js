@@ -1079,7 +1079,6 @@ const fireDepartmentLayer = new FeatureLayer({
   layerOrder = [
     // Ensure neighbourhood polygons sit above buildings so their pop‑ups remain accessible
     neighbourhoodsLayer,
-    buildingsLayer,
     rmowBoundaryLayer,
     criticalInfrastructureLayer,
     pointsOfInterestLayer,
@@ -1087,6 +1086,8 @@ const fireDepartmentLayer = new FeatureLayer({
     policeStationLayer,
     medicalCentreLayer,
     fireDepartmentLayer,
+    dikesLayer,
+    buildingsLayer,
     smokeLayer,
     rockfallLayer,
     debrisLayer,
@@ -1099,7 +1100,7 @@ const fireDepartmentLayer = new FeatureLayer({
     ...vulnerabilityLayers,
     vulnerabilityOutlineLayer,
     // Community points layers are drawn on top of vulnerability polygons so they remain clickable
-    dikesLayer,
+    
     floodExtentLayer,
     floodLayer,
     // Community points layers drawn at the top
