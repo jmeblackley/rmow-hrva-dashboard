@@ -15,7 +15,11 @@ const LST_LAYER_ITEM_ID       = "5557e9f89df349809d212d54066ccbeb";
 const FUELBREAKS_LAYER_ITEM_ID = "b7d65560b3514835a47fe541ef31bfb3";
 const FUELMNG_LAYER_ITEM_ID   = "b9421a66f7104e47886395fc70e61270";
 const RISKCLS_LAYER_ITEM_ID   = "1533a455f7e84c4d916c951a155f797d";
-const THREATCLS_LAYER_ITEM_ID = "006ca2c7ecb2464d9b14eeafa1ea1bbc";
+// Updated Threat Class layer ID from dev branch
+const THREATCLS_LAYER_ITEM_ID = "b26943a92ea84cde8264e51b2470f5ca";
+
+// New fire fuel types layer ID from dev branch
+const FUELTYPES_LAYER_ITEM_ID = "201944f7b0814e939dc3f0626df86293";
 const FLOOD_LAYER_ITEM_ID     = "c14e543a2a8944b6aba17b589e2d532b";
 const NEIGHBOURHOOD_ITEM_ID   = "eaaf9354f8ce4c8588e29f1137667cde"; // sublayer 12
 const DIKES_LAYER_ITEM_ID     = "6ce26b152302474281495a081ee7e4b0";
@@ -575,7 +579,8 @@ function setupVisibilityListeners(config) {
   // ============================ FLOOD LAYERS =============================
   const dikesLayer = new FeatureLayer({
     portalItem: { id: DIKES_LAYER_ITEM_ID },
-    title: "Flood Protection Dikes Layer",
+    // Simplify the layer title
+    title: "Flood Protection Dikes",
     opacity: 1,
     visible: true,
     popupEnabled: true
@@ -622,7 +627,7 @@ function setupVisibilityListeners(config) {
       }
     },
     opacity: 1,
-    popupEnabled: false
+    popupEnabled: true
   });
 
   // ============================ WILDFIRE LAYERS =============================
@@ -654,6 +659,16 @@ function setupVisibilityListeners(config) {
     visible: false,
     popupEnabled: true
   });
+
+// --- Fire Fuel Types Layer ---
+// This layer displays spatial distribution of fuel types for wildfire modelling.
+const fuelLayer = new FeatureLayer({
+  portalItem: { id: FUELTYPES_LAYER_ITEM_ID },
+  title: "Fire Fuels",
+  opacity: 1,
+  visible: false,
+  popupEnabled: true
+});
 
 // ============================ COMMUNITY POINTS LAYERS =============================
 // These layers represent various points of interest and facilities such as
@@ -774,30 +789,38 @@ const fireDepartmentLayer = new FeatureLayer({
     },
     opacity: 1,
     popupEnabled: true,
-    // Optional: override neighbourhood labels; rename Wedgewoods to Heliport if field exists
-    // Removed labelingInfo to restore default neighbourhood labels and avoid
-    // breaking pop-ups. This section can be re-enabled once the correct
-    // field name for neighbourhood names is confirmed.
-     labelingInfo: [
-       {
-         labelExpressionInfo: {
-           // Attempt to rename the Wedgewoods neighbourhood to Heliport. Replace `Name` with actual field name if different.
-           expression: "IIF($feature.ASSETNAME == 'Wedgewoods', 'Heliport', $feature.ASSETNAME)"
-         },
-         symbol: {
-           type: "text",
-           color: [80, 80, 80, 0.9],
-           haloSize: 1,
-           haloColor: [255, 255, 255, 0.9],
-           font: {
-             family: "sans-serif",
-             size: 10,
-             weight: "normal"
-           }
-         },
-         labelPlacement: "center-center"
-       }
-     ]
+    // Provide a custom labeling expression to rename the Wedgewoods
+    // neighbourhood to Heliport.  This expression tries several
+    // common field names (Name, NAME, name) and falls back to the
+    // first non‑empty value.  If the neighbourhood name equals
+    // "Wedgewoods", it returns "Heliport"; otherwise it returns
+    // the original name.  Labels are enabled so that neighbourhoods
+    // continue to display their names on the map without affecting
+    // pop‑ups.
+    labelingInfo: [
+      {
+        labelExpressionInfo: {
+          // Use the ASSETNAME field for neighbourhood labels.  If the
+          // neighbourhood's ASSETNAME is "Wedgewoods", rename it to
+          // "Heliport"; otherwise use the ASSETNAME value directly.
+          expression: "IIF($feature.ASSETNAME == 'Wedgewoods', 'Heliport', $feature.ASSETNAME)"
+        },
+        symbol: {
+          type: "text",
+          color: [80, 80, 80, 0.9],
+          haloSize: 1,
+          haloColor: [255, 255, 255, 0.9],
+          font: {
+            family: "sans-serif",
+            size: 10,
+            weight: "normal"
+          }
+        },
+        labelPlacement: "center-center"
+      }
+    ],
+    // Make sure labels are visible so ASSETNAME values are shown on the map.
+    labelsVisible: true
   });
 
   // --- RMOW Boundary: subtle outline, no fill (always on; not in toggle panel) ---
@@ -941,6 +964,7 @@ const fireDepartmentLayer = new FeatureLayer({
       label: "Living Alone (%)",
       field: "__living_alone",
       // Living‑alone quintile breaks (approximate) matching renter distribution
+      // Updated breaks based on dev branch (0–8, 8–11, 11–13, 13–13.5, 13.5–17.3)
       breaks: [0, 8, 11, 13, 13.5, 17.3],
       colors: palGreens5,
       visible: false
@@ -1077,17 +1101,17 @@ const fireDepartmentLayer = new FeatureLayer({
   // are inserted before flood layers so they appear on top of basemap and
   // hazard layers but below flood overlays.
   layerOrder = [
-    // Ensure neighbourhood polygons sit above buildings so their pop‑ups remain accessible
-    neighbourhoodsLayer,
-    rmowBoundaryLayer,
+    // Always draw community facilities on top of all other layers so points remain visible
     criticalInfrastructureLayer,
     pointsOfInterestLayer,
     schoolLayer,
     policeStationLayer,
     medicalCentreLayer,
     fireDepartmentLayer,
-    dikesLayer,
+    // Neighbourhood polygons remain above buildings for pop‑ups
+    neighbourhoodsLayer,
     buildingsLayer,
+    rmowBoundaryLayer,
     smokeLayer,
     rockfallLayer,
     debrisLayer,
@@ -1095,17 +1119,15 @@ const fireDepartmentLayer = new FeatureLayer({
     fuelMngdLayer,
     fireRiskLayer,
     fireThreatLayer,
+    fuelLayer,
     lstLayer,
     ndviLayer,
     ...vulnerabilityLayers,
     vulnerabilityOutlineLayer,
-    // Community points layers are drawn on top of vulnerability polygons so they remain clickable
-    
+    // Flood-related layers
+    dikesLayer,
     floodExtentLayer,
-    floodLayer,
-    // Community points layers drawn at the top
-
-
+    floodLayer
   ];
   webmap.addMany(layerOrder);
 
@@ -1174,6 +1196,7 @@ const fireDepartmentLayer = new FeatureLayer({
         { id: "fuelBreakToggle", layers: [fuelBreaksLayer, fuelMngdLayer], label: "Fuel Breaks and Fire Managed Areas", info: ""},
         { id: "fireRiskToggle", layers: [fireRiskLayer], label: "Wildfire Risk Class ≥ Moderate", info: ""},
         { id: "fireThreatToggle", layers: [fireThreatLayer], label: "WUI Fire Threat Class ≥ 6", info: ""},
+        { id: "fuelToggle", layers: [fuelLayer], label: "Fire Fuel Types", info: "" },
       ]
     },
     {
