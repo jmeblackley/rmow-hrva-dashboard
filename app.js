@@ -1171,10 +1171,16 @@ const fireDepartmentLayer = new FeatureLayer({
   // --- UI toggles ---
   const uiMappings = [
     {
-      category: "RMOW Basemap",
+      category: "Community Context",
       items: [
         { id: "buildingsToggle", layers: [buildingsLayer], label: "Building Footprints", info: "B" },
         { id: "neighbourhoodsToggle", layers: [neighbourhoodsLayer], label: "Neighbourhoods", info: "N" },
+        { id: "criticalToggle", layers: [criticalInfrastructureLayer], label: "Critical Infrastructure", info: "" },
+        { id: "poiToggle", layers: [pointsOfInterestLayer], label: "Points of Interest", info: "" },
+        { id: "schoolToggle", layers: [schoolLayer], label: "Schools", info: "" },
+        { id: "policeToggle", layers: [policeStationLayer], label: "Police Stations", info: "" },
+        { id: "medicalToggle", layers: [medicalCentreLayer], label: "Medical Centres", info: "" },
+        { id: "fireToggle", layers: [fireDepartmentLayer], label: "Fire Departments", info: "" }
       ]
     },
     {
@@ -1212,6 +1218,15 @@ const fireDepartmentLayer = new FeatureLayer({
       ]
     },
     {
+      category: "Flooding",
+      items: [
+        { id: "dikesToggle", layers: [dikesLayer], label: "Flood Protection Dikes", info: ""},
+        // Split flood extent into its own toggle so users can control the outline separately
+        { id: "floodExtentToggle", layers: [floodExtentLayer], label: "Flood Extent Outline", info: "" },
+        { id: "floodToggle", layers: [floodLayer], label: "Clear-water Flood hazard (200-year event)", info: "" }
+      ]
+    },
+    {
       category: "Vulnerability Layers",
       items: [
         // Generate a toggle for each vulnerability variable
@@ -1223,27 +1238,8 @@ const fireDepartmentLayer = new FeatureLayer({
         }))
       ]
     },
-    {
-      // Points and facilities such as critical infrastructure and services
-      category: "Community Facilities",
-      items: [
-        { id: "criticalToggle", layers: [criticalInfrastructureLayer], label: "Critical Infrastructure", info: "" },
-        { id: "poiToggle", layers: [pointsOfInterestLayer], label: "Points of Interest", info: "" },
-        { id: "schoolToggle", layers: [schoolLayer], label: "Schools", info: "" },
-        { id: "policeToggle", layers: [policeStationLayer], label: "Police Stations", info: "" },
-        { id: "medicalToggle", layers: [medicalCentreLayer], label: "Medical Centres", info: "" },
-        { id: "fireToggle", layers: [fireDepartmentLayer], label: "Fire Departments", info: "" }
-      ]
-    },
-    {
-      category: "Flooding",
-      items: [
-        { id: "dikesToggle", layers: [dikesLayer], label: "Flood Protection Dikes", info: ""},
-        // Split flood extent into its own toggle so users can control the outline separately
-        { id: "floodExtentToggle", layers: [floodExtentLayer], label: "Flood Extent Outline", info: "" },
-        { id: "floodToggle", layers: [floodLayer], label: "Clear-water Flood hazard (200-year event)", info: "" }
-      ]
-    },
+    
+    
   ];  
 
   renderLayerControls(uiMappings, "layerPanel");
