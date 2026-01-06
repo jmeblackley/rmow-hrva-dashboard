@@ -530,7 +530,7 @@ function setupVisibilityListeners(config) {
     portalItem: { id: DEBRISF_LAYER_ITEM_ID },
     opacity: 0.9,
     visible: false,
-    title: "Debris flow hazard"
+    title: "Rockfall hazard"
   });
 
   smokeLayer.load().then(() => {
@@ -1239,7 +1239,9 @@ const fireDepartmentLayer = new FeatureLayer({
       category: "Flooding",
       items: [
         { id: "dikesToggle", layers: [dikesLayer], label: "Flood Protection Dikes", info: ""},
-        { id: "floodToggle", layers: [floodLayer, floodExtentLayer], label: "Clear-water Flood hazard (200-year event)", info: ""}
+        // Split flood extent into its own toggle so users can control the outline separately
+        { id: "floodExtentToggle", layers: [floodExtentLayer], label: "Flood Extent Outline", info: "" },
+        { id: "floodToggle", layers: [floodLayer], label: "Clear-water Flood hazard (200-year event)", info: "" }
       ]
     },
   ];  
