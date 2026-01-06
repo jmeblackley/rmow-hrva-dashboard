@@ -526,7 +526,7 @@ function setupVisibilityListeners(config) {
     portalItem: { id: DEBRISF_LAYER_ITEM_ID },
     opacity: 0.9,
     visible: false,
-    title: "Rockfall hazard"
+    title: "Debris flow hazard"
   });
 
   smokeLayer.load().then(() => {
