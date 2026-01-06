@@ -782,7 +782,7 @@ const fireDepartmentLayer = new FeatureLayer({
        {
          labelExpressionInfo: {
            // Attempt to rename the Wedgewoods neighbourhood to Heliport. Replace `Name` with actual field name if different.
-           expression: "IIF($feature.ASSETNAME == 'Wedgewoods', 'Heliport', $feature.Name)"
+           expression: "IIF($feature.ASSETNAME == 'Wedgewoods', 'Heliport', $feature.ASSETNAME)"
          },
          symbol: {
            type: "text",
