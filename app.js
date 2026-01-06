@@ -941,7 +941,7 @@ const fireDepartmentLayer = new FeatureLayer({
       label: "Living Alone (%)",
       field: "__living_alone",
       // Living‑alone quintile breaks (approximate) matching renter distribution
-      breaks: [0, 28.1, 37.4, 47.4, 57.2, 81.1],
+      breaks: [0, 8, 11, 13, 13.5, 17.3],
       colors: palGreens5,
       visible: false
     }
