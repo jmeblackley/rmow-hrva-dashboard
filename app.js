@@ -2,10 +2,12 @@
 // Uses AGOL items directly, no API key, for public content.
 
 // const BASEMAP_ITEM_ID        = "16ccd4ff9fe3428690c776202ff4a5c7"; // Jamie's initial basemap
-const BASEMAP_ITEM_ID = "a7dd522d5f374ef3840d2dc35c83b7ea"; // Colin's for underlay
+const BASEMAP_ITEM_ID = "a7dd522d5f374ef3840d2dc35c83b7ea"; // 
+const ALT_BASEMAP_ITEM_ID = "17737d53d01845c1bf0af57a796db7b9"; // Colin's for underlay
 const OVERLAY_ITEM_ID = "20e707c910c1493fa33818c4fe835f86"; // Merged overlay polygons
 const WB_BOUNDARY_ITEM_ID = "04ee7fab5a204ceebadfe539d66ce361";
 const BUILDINGS_ITEM_ID = "b302800be04844b485800c5997d74766";
+const ROADS_ITEM_ID = "???"; // Upload struggles
 
 const SMOKE_LAYER_ITEM_ID = "02019d71f4e04a22851fb60cc2b076c2";
 const ROCKFALL_LAYER_ITEM_ID = "093117efdd044aa0ae99c16e2f918922";
@@ -126,6 +128,7 @@ require([
   "esri/layers/ImageryTileLayer",
   "esri/layers/ImageryLayer",
   "esri/layers/FeatureLayer",
+  "esri/layers/VectorTileLayer",
   "esri/renderers/RasterStretchRenderer",
   "esri/rest/support/AlgorithmicColorRamp",
   "esri/rest/support/MultipartColorRamp",
@@ -142,6 +145,7 @@ require([
   ImageryTileLayer,
   ImageryLayer,
   FeatureLayer,
+  VectorTileLayer,
   RasterStretchRenderer,
   AlgorithmicColorRamp,
   MultipartColorRamp,
@@ -157,9 +161,17 @@ require([
 
   // --- WebMap (basemap + existing AGOL layers) ---
   const webmap = new WebMap({
-    portalItem: { id: BASEMAP_ITEM_ID }
+    portalItem: { id: ALT_BASEMAP_ITEM_ID }
   });
-
+  const REF_LAYER_ID = "14fbc125ccc9488888b014db09f35f67"
+  // --- Testing base layer ---
+  const referenceLayer = new VectorTileLayer({
+    portalItem: { id: REF_LAYER_ID },
+    title: "Basemap Reference",
+    opacity: 1,
+    popupEnabled: false,
+    visible: true,
+  });
 
   // // ============================================================================
   // //                          FUNCTIONS
@@ -1555,6 +1567,13 @@ require([
   //                        BASEMAP LAYER DEFINITIONS
 
   // ============================================================================
+  const roadsLayer = new FeatureLayer({
+    portalItem: { id: ROADS_ITEM_ID },
+    title: "Roads Overlay",
+    opacity: 1,
+    visible: false,
+    popupEnabled: false
+  });
 
   // --- Neighbourhoods: transparent fill, neutral grey outline ---
   const neighbourhoodsLayer = new FeatureLayer({
@@ -1828,7 +1847,8 @@ require([
     if (cfg.breaks && cfg.colors) {
       renderer = buildVulnerabilityRenderer(cfg.breaks, cfg.colors, cfg.field);
       // Override legend title to use the layer label
-      renderer.legendOptions = { title: cfg.label };
+      // renderer.legendOptions = { title: cfg.label };
+      renderer.legendOptions = { title: " " };
     }
     const layer = new FeatureLayer({
       portalItem: { id: VULNERABILITY_LAYER_ITEM_ID },
@@ -1888,6 +1908,7 @@ require([
   // hazard layers but below flood overlays.
   const layerOrder = [
     // Always draw community facilities on top of all other layers so points remain visible
+    referenceLayer,
     schoolLayer,
     policeStationLayer,
     medicalCentreLayer,
@@ -1896,6 +1917,7 @@ require([
     criticalInfrastructureLayer,
     // Neighbourhood polygons remain above buildings for pop‑ups
     neighbourhoodsLayer,
+    // roadsLayer,
     buildingsLayer,
     rmowBoundaryLayer,
     smokeLayer,
@@ -1962,8 +1984,10 @@ require([
     {
       category: "Community Context",
       items: [
+        { id: "referenceToggle", layers: [referenceLayer], label: "Map Reference", info: "B" },
         { id: "buildingsToggle", layers: [buildingsLayer], label: "Building Footprints", info: "B" },
         { id: "neighbourhoodsToggle", layers: [neighbourhoodsLayer], label: "Neighbourhoods", info: "N" },
+        // { id: "roadsToggle", layers: [roadsLayer], label: "Roads Overlay", info: "" },
         { id: "criticalToggle", layers: [criticalInfrastructureLayer], label: "Critical Infrastructure", info: "" },
         { id: "poiToggle", layers: [pointsOfInterestLayer], label: "Points of Interest", info: "" },
         { id: "schoolToggle", layers: [schoolLayer], label: "Schools", info: "" },
