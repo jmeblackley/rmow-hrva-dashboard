@@ -1,18 +1,17 @@
 <!doctype html>
 <html lang="en">
+
 <head>
   <meta charset="utf-8" />
   <title>Whistler Hazard Map</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <!-- ArcGIS JS API -->
-  <link
-    rel="stylesheet"
-    href="https://js.arcgis.com/4.30/esri/themes/light/main.css"
-  />
+  <link rel="stylesheet" href="https://js.arcgis.com/4.30/esri/themes/light/main.css" />
   <script src="https://js.arcgis.com/4.30/"></script>
   <script type="module" src="https://js.arcgis.com/calcite-components/3.3.3/calcite.esm.js"></script>
   <link rel="stylesheet" type="text/css" href="https://js.arcgis.com/calcite-components/2.13.2/calcite.css" />
+  <link rel="stylesheet" href="styles.css" />
 
   <style>
     :root {
@@ -30,7 +29,8 @@
       box-sizing: border-box;
     }
 
-    html, body {
+    html,
+    body {
       height: 100%;
       margin: 0;
     }
@@ -88,7 +88,8 @@
 
     .layout {
       position: relative;
-      height: calc(100% - 48px); /* approx header height */
+      height: calc(100% - 48px);
+      /* approx header height */
       background: var(--bg-paper);
     }
 
@@ -135,16 +136,19 @@
       backdrop-filter: blur(2px);
       max-height: 60vh;
       max-width: 40vh;
-      display: none; /* Controlled by JS */
+      display: none;
+      /* Controlled by JS */
       flex-direction: column;
     }
 
     #infoPanel {
-      height: 100%;     /* Force panel to fill the 60vh wrapper */
-      overflow: hidden; /* Prevent the panel itself from leaking */
-      display: flex,
-      flex-direction: colmn,
-    /* This targets the internal scrollable area of the Calcite Panel */
+      height: 100%;
+      /* Force panel to fill the 60vh wrapper */
+      overflow: hidden;
+      /* Prevent the panel itself from leaking */
+      display: flex;
+      flex-direction: column;
+      /* This targets the internal scrollable area of the Calcite Panel */
       --calcite-panel-content-height: auto;
       --calcite-shell-panel-width: 100%;
     }
@@ -176,7 +180,8 @@
       left: 50%;
       bottom: 25px;
       transform: translateX(-50%);
-      z-index: 35; /* above map, below popups */
+      z-index: 35;
+      /* above map, below popups */
     }
 
     /* --- LGeo logo (bottom-right) --- */
@@ -189,7 +194,7 @@
       width: auto;
       object-fit: contain;
     }
-      
+
 
     /* Mobile-ish: shrink logos and panel */
     @media (max-width: 768px) {
@@ -197,17 +202,21 @@
         grid-template-columns: auto 1fr auto;
         padding-inline: 0.5rem;
       }
+
       .rmow-logo {
         height: 28px;
       }
+
       .topstrip-title {
         font-size: 1.1rem;
       }
+
       .corner-panel {
         left: 0.6rem;
         bottom: 0.6rem;
         padding: 0.5rem 0.6rem;
       }
+
       .lgeo-logo {
         right: 0.5rem;
         bottom: 0.5rem;
@@ -218,23 +227,27 @@
     .layer-row {
       display: flex;
       flex-direction: row;
-      align-items: center;    /* Vertical center for all children */
-      gap: 15px;               /* Small space between icon and checkbox */
+      align-items: center;
+      /* Vertical center for all children */
+      gap: 15px;
+      /* Small space between icon and checkbox */
       padding: 2px 0;
       width: 100%;
     }
 
     /* THE FIX: Remove the default margin that offsets the line */
     .layer-row calcite-label {
-      margin: 0 !important;   
+      margin: 0 !important;
       display: flex;
       align-items: center;
-      gap: 8px;               /* Space between checkbox and text */
+      gap: 8px;
+      /* Space between checkbox and text */
     }
 
     /* Ensure the action doesn't have internal padding pushing it down */
     .layer-row calcite-action {
-      --calcite-ui-icon-color: #666; /* Optional: Tone down the icon color */
+      --calcite-ui-icon-color: #666;
+      /* Optional: Tone down the icon color */
       margin: 0;
       transform: translateY(-6.5px);
       height: 18px;
@@ -242,16 +255,16 @@
     }
 
     .layer-row calcite-action.info-active {
-      --calcite-ui-icon-color: #007ac2 !important; /* Forces the blue color */
+      --calcite-ui-icon-color: #007ac2 !important;
+      /* Forces the blue color */
     }
 
     calcite-checkbox {
       vertical-align: middle;
     }
-
- 
   </style>
 </head>
+
 <body>
   <header class="topstrip">
     <div class="topstrip-left">
@@ -274,12 +287,12 @@
     <div class="info-panel">
       <calcite-panel heading="Layer Details" id="infoPanel" closable>
       </calcite-panel>
-    </div> 
+    </div>
 
     <div class="corner-panel">
       <calcite-panel heading="Layer Controls" id="layerPanel" collapsible>
       </calcite-panel>
-    </div>    
+    </div>
 
     <!-- LGeo logo watermark (LGeo-logo_vert.png in repo root) -->
     <img src="LGeo-logo_vert.png" alt="LGeo logo" class="lgeo-logo" />
@@ -288,4 +301,5 @@
   <!-- App logic -->
   <script src="app.js"></script>
 </body>
+
 </html>

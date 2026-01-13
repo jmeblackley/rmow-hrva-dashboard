@@ -1,0 +1,11 @@
+/* We want the set of expandable menuts on the left to have a limited height and initiate scrolling at a certain point */
+#layerPanel {
+    /* Don’t let the content exceed the viewport */
+    max-height: calc(100vh - 160px);
+    overflow-y: auto;
+    overflow-x: hidden;
+
+    /* scrollbar */
+    padding-right: 8px;
+    box-sizing: border-box;
+}
