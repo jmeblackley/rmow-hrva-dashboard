@@ -1,0 +1,17 @@
+<!--?xml version="1.0" encoding="UTF-8"?-->
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="School">
+
+  <!-- White circular background -->
+  <circle cx="32" cy="32" r="30" fill="#ffffff" stroke="#00897b" stroke-width="3"></circle>
+
+  <!-- Graduation cap (top) -->
+  <polygon points="32,18 14,26 32,34 50,26" fill="#00897b"></polygon>
+
+  <!-- Cap base (shifted up ~5%) -->
+  <rect x="22" y="27" width="20" height="12.5" rx="2" fill="#00897b"></rect>
+
+  <!-- Tassel (offset to the right) -->
+  <line x1="44" y1="26" x2="44" y2="40" stroke="#00897b" stroke-width="2" stroke-linecap="round"></line>
+  <circle cx="44" cy="41.5" r="2" fill="#00897b"></circle>
+
+</svg>
