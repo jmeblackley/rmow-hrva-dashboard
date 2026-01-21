@@ -1,0 +1,1595 @@
+// RMOW hazard viewer styled to match static map
+// Uses AGOL items directly, no API key, for public content.
+
+// const BASEMAP_ITEM_ID        = "16ccd4ff9fe3428690c776202ff4a5c7"; // Jamie's initial basemap
+const BASEMAP_ITEM_ID = "a7dd522d5f374ef3840d2dc35c83b7ea"; // 
+const ALT_BASEMAP_ITEM_ID = "17737d53d01845c1bf0af57a796db7b9"; // Colin's for underlay
+const OVERLAY_ITEM_ID = "20e707c910c1493fa33818c4fe835f86"; // Merged overlay polygons
+const WB_BOUNDARY_ITEM_ID = "04ee7fab5a204ceebadfe539d66ce361";
+const BUILDINGS_ITEM_ID = "b302800be04844b485800c5997d74766";
+const ROADS_ITEM_ID = "???"; // Upload struggles
+
+const SMOKE_LAYER_ITEM_ID = "02019d71f4e04a22851fb60cc2b076c2";
+const ROCKFALL_LAYER_ITEM_ID = "093117efdd044aa0ae99c16e2f918922";
+const DEBRISF_LAYER_ITEM_ID = "f6a548dcae7145dbad1f77a285f192f6";
+const NDVI_LAYER_ITEM_ID = "daa0a40dbeb04d60af56d239dd592e8c";
+const LST_LAYER_ITEM_ID = "5557e9f89df349809d212d54066ccbeb";
+const FUELBREAKS_LAYER_ITEM_ID = "b7d65560b3514835a47fe541ef31bfb3";
+const FUELMNG_LAYER_ITEM_ID = "b9421a66f7104e47886395fc70e61270";
+const RISKCLS_LAYER_ITEM_ID = "1533a455f7e84c4d916c951a155f797d";
+// Updated Threat Class layer ID from dev branch
+const THREATCLS_LAYER_ITEM_ID = "b26943a92ea84cde8264e51b2470f5ca";
+
+// New fire fuel types layer ID from dev branch
+const FUELTYPES_LAYER_ITEM_ID = "201944f7b0814e939dc3f0626df86293";
+const FLOOD_LAYER_ITEM_ID = "c14e543a2a8944b6aba17b589e2d532b";
+const NEIGHBOURHOOD_ITEM_ID = "eaaf9354f8ce4c8588e29f1137667cde"; // sublayer 12
+const DIKES_LAYER_ITEM_ID = "6ce26b152302474281495a081ee7e4b0";
+const FLOOD_OUTLINE_ITEM_ID = "39c5ebf72e18404eb39e6cf8399e3f0c";
+
+// ---------------------------------------------------------------------------
+//                      Points Layer Identifier
+// ---------------------------------------------------------------------------
+// The points group layer lives within the same feature service that hosts
+// neighbourhoods and other municipal layers.  Its item ID is the same as
+// NEIGHBOURHOOD_ITEM_ID (eaaf9354f8ce4c8588e29f1137667cde).  By using this
+// identifier along with the appropriate layerId, we can add the points and
+// facility layers to the map.  A previous attempt used the webmap ID
+// (16ccd4ff9fe3428690c776202ff4a5c7), which prevented the features from
+// loading; this patch corrects that mistake.
+const POINTS_ITEM_ID = NEIGHBOURHOOD_ITEM_ID;
+
+// ---------------------------------------------------------------------------
+//                      Vulnerability Layer Identifier
+// ---------------------------------------------------------------------------
+// Dissemination‑area feature layer that stores census attributes. This ID
+// corresponds to the AGOL item containing DA polygons with fields such as
+// `_65_and_older` (percentage of seniors), `tempthresh_2021` (percent of
+// buildings exceeding 29 °C LST) and other socioeconomic indicators.  We'll
+// use this layer to create thematic vulnerability maps and a separate
+// outline layer for pop‑ups.  See README/metadata for details.
+const VULNERABILITY_LAYER_ITEM_ID = "c88b8529a6b04f0ab7c2ef06debdd1bc";
+
+// Note: removed duplicate declaration of VULNERABILITY_LAYER_ITEM_ID to avoid redefinition.
+
+// --- colour map definitions --- 
+// Esri color ramps - Starburst
+const starburst = ["#ec8787ff", "#f9cbb3ff", "#fff0d0ff", "#b7d5d7ff", "#70b6baff"];
+// Esri color ramps - Red 1
+const reds1 = ["#f6d7e0ff", "#e6968eff", "#db6a58ff", "#a1412cff"];
+// Esri color ramps - Blue and Red 10
+const redblue10 = ["#d7191cff", "#fdae61ff", "#ffffbfff", "#abdda4ff", "#2b83baff"];
+const bluered10 = ["#2b83baff", "#abdda4ff", "#ffffbfff", "#fdae61ff", "#d7191cff"];
+const redblue = ["#a53217ff", "#d2987fff", "#fffee6ff", "#8897a2ff", "#10305eff"];
+// const inferno = ["#010005ff", "#1c0f4bff", "#520d8eff", "#881b9eff", "#bc2e9aff", "#f04188ff", "#ff5c6aff", "#ff8345ff", "#ffb71bff", "#fff415ff", "#ffff64ff", "#ffffe1ff", "#ffffebff"];
+const inferno = ["#520d8eff", "#bc2e9aff", "#ff5c6aff", "#ffb71bff", "#ffff64ff"];
+
+const rockfall = ["#f9eedd00", "#dea183ff", "#cd7C58ff", "#ba5632ff"]
+// const debris = ["#a297b300", "#9f8cbdff", "#9b81c6ff", "#9876d0ff", "#946bd9ff", "#9060cfff", "#8d55ecff", "#894af6ff", "#853fffff", "#a46fbfff", "#c29f80ff", "#e0cf40ff", "#ffff00ff"];
+// Esri color ramps - Viridis
+// const debris = ["#6730a4ff", "#6058beff", "#507dc9ff", "#419ecbff", "#35bdcbff", "#2cdcc6ff", "#3bfbb6ff", "#6fff99ff", "#b9ff6eff", "#ffff37ff"];
+const debris = ["#44015400", "#48247540", "#41448780", "#355f8dbf", "#2a788eff", "#21918cff", "#22a884ff", "#44bf70ff", "#7ad151ff", "#bddf26ff", "#fde725ff"];
+const dry = ["#543005ff", "#8c510aff", "#bf812dff", "#dfc27dff", "#f6e8c3ff", "#f5f5f500", "#c7eae5ff", "#80cdc1ff", "#35978fff", "#01665eff", "#003c30ff"];
+const floodblue = ["#c6dbef", "#9ecae1", "#6baed6", "#3182bd", "#08519c"];
+
+// Sequential five‑class palettes for vulnerability layers (light → dark)
+// These palettes are derived from ColorBrewer (https://colorbrewer2.org/) and
+// provide consistent hues across different categories. Each array contains
+// five colours, corresponding to the five classes produced by the quantile
+// breaks in vulnerabilityConfigs.
+const palPurples5 = ["#f2f0f7", "#cbc9e2", "#9e9ac8", "#756bb1", "#54278f"]; // seniors
+const palBlues5 = ["#eff3ff", "#bdd7e7", "#6baed6", "#3182bd", "#08519c"]; // children
+const palReds5 = ["#fee5d9", "#fcae91", "#fb6a4a", "#de2d26", "#a50f15"]; // low income
+const palGreens5 = ["#edf8e9", "#bae4b3", "#74c476", "#31a354", "#006d2c"]; // living alone
+const palOranges5 = ["#feedde", "#fdbe85", "#fd8d3c", "#e6550d", "#a63603"]; // renters
+
+const imageryColorbars = {
+    Smoke: {
+        colors: bluered10,
+        title: "Smoke hazard",
+        leftLabel: "0 Days",
+        rightLabel: "114 Days"
+    },
+    Rockfall: {
+        colors: rockfall,
+        title: "Rockfall susceptibility",
+        leftLabel: "Lower",
+        rightLabel: "Higher"
+    },
+    Debris: {
+        colors: debris,
+        title: "Debris flow susceptibility",
+        leftLabel: "Lower",
+        rightLabel: "Higher"
+    },
+    LST: {
+        colors: inferno,
+        title: "Extreme heat hazard",
+        leftLabel: "3°C",
+        rightLabel: "38°C"
+    },
+    NDVI: {
+        colors: dry,
+        title: "Drought susceptibility",
+        leftLabel: "Drought<br>susceptible",
+        rightLabel: "Drought<br>tolerant"
+    },
+    Flood: {
+        colors: floodblue,
+        title: "Clear-water flood depth<br>(200-year)",
+        leftLabel: "0\u00A0m",
+        rightLabel: "7.5\u00A0m"
+    }
+};
+
+require([
+    "esri/config",
+    "esri/WebMap",
+    "esri/layers/ImageryTileLayer",
+    "esri/layers/ImageryLayer",
+    "esri/layers/FeatureLayer",
+    "esri/layers/VectorTileLayer",
+    "esri/renderers/RasterStretchRenderer",
+    "esri/rest/support/AlgorithmicColorRamp",
+    "esri/rest/support/MultipartColorRamp",
+    "esri/smartMapping/raster/support/colorRamps",
+    "esri/Color",
+    "esri/views/MapView",
+    "esri/widgets/Legend",
+    "esri/widgets/ScaleBar",
+    "esri/widgets/Expand",
+    "esri/widgets/Feature"
+], function (
+    esriConfig,
+    WebMap,
+    ImageryTileLayer,
+    ImageryLayer,
+    FeatureLayer,
+    VectorTileLayer,
+    RasterStretchRenderer,
+    AlgorithmicColorRamp,
+    MultipartColorRamp,
+    colorRamps,
+    Color,
+    MapView,
+    Legend,
+    ScaleBar,
+    Expand,
+    Feature
+) {
+    // esriConfig.apiKey = "YOUR_API_KEY"; // only if you later add secured content
+
+    // --- WebMap (basemap + existing AGOL layers) ---
+    const webmap = new WebMap({
+        portalItem: { id: ALT_BASEMAP_ITEM_ID }
+    });
+    const REF_LAYER_ID = "14fbc125ccc9488888b014db09f35f67"
+    // --- Testing base layer ---
+    const referenceLayer = new VectorTileLayer({
+        portalItem: { id: REF_LAYER_ID },
+        title: "Basemap Reference",
+        opacity: 1,
+        popupEnabled: false,
+        visible: true,
+    });
+
+    // ============================================================================
+    //                          FUNCTIONS
+    // ============================================================================
+    // /**
+    //  * Retrieves a named Esri Color Ramp and formats it for the RasterStretchRenderer.
+    //  * Works for a limited subset of names, but I can't find a way to get a reference list
+    //  * @param {string} name - The name of the Esri color ramp.
+    //  * @returns {Object} A valid ColorRamp object for the renderer.
+    //  */
+    // function getEsriColorRamp(name) {
+    //     // 1. Look up the color data structure
+    //     const rampData = colorRamps.byName(name);
+
+    //     if (!rampData || !rampData.colors || rampData.colors.length === 0) {
+    //         // Fallback to a simple, manually defined algorithmic ramp if lookup fails
+    //         console.error(`Named color ramp "${name}" lookup failed. Using Blue-to-Red fallback.`);
+    //         return new AlgorithmicColorRamp({
+    //             algorithm: "cie-lab",
+    //             fromColor: new Color("#0000FF"),
+    //             toColor: new Color("#FF0000")
+    //         });
+    //     }
+
+    //     // 2. Convert the color data into a proper ColorRamp class instance
+    //     return colorRamps.createColorRamp(rampData);
+    // }
+
+    /**
+     * Creates a MultipartColorRamp from a flat array of hex color codes, with optional positions.
+     * @param {string[]} colorHexCodes - An array of hex color strings.
+     * @param {number[]} [ratios] - Optional array of ratios (0.0 to 1.0) defining color positions.
+     * @returns {MultipartColorRamp | null}
+     */
+    function createManualMultipartColorRamp(colorHexCodes, ratios) {
+        if (!colorHexCodes || colorHexCodes.length < 2) {
+            console.error("Multipart color ramp requires at least two colors.");
+            return null;
+        }
+
+        if (ratios && ratios.length !== colorHexCodes.length) {
+            console.error("If ratios are provided, the count must match the color count.");
+            return null;
+        }
+
+        const segments = [];
+
+        // Create a segment (AlgorithmicColorRamp) between every consecutive pair of colors.
+        for (let i = 0; i < colorHexCodes.length - 1; i++) {
+            const fromColor = new Color(colorHexCodes[i]);
+            const toColor = new Color(colorHexCodes[i + 1]);
+
+            const segment = new AlgorithmicColorRamp({
+                algorithm: "cie-lab",
+                fromColor: fromColor,
+                toColor: toColor
+            });
+
+            // Case 1: Custom Ratios provided. Use the ratio/colorRamp structure.
+            if (ratios) {
+                segments.push({
+                    colorRamp: segment,
+                    // The ratio where this segment STARTS (must match the index of the start color)
+                    ratio: ratios[i]
+                });
+            }
+            // Case 2: No Ratios provided. Just push the segment. The API assumes even spacing.
+            else {
+                segments.push(segment);
+            }
+        }
+
+        return new MultipartColorRamp({
+            colorRamps: segments
+        });
+    }
+
+    function makeContinuousColorbarHTML({ colors, leftLabel, rightLabel, title }) {
+        const gradient = `linear-gradient(to right, ${colors.join(",")})`;
+
+        return `
+    <div style="display:flex; flex-direction:column; gap:6px;">
+      ${title ? `<div style="font-weight:600; font-size:0.9rem;">${title}</div>` : ""}
+      <div style="height:14px; border-radius:8px; border:1px solid #ddd; background:${gradient};"></div>
+      <div style="display:flex; justify-content:space-between; font-size:0.8rem; color:#444;">
+        <span>${leftLabel ?? ""}</span>
+        <span>${rightLabel ?? ""}</span>
+      </div>
+    </div>
+  `;
+    }
+
+    /**
+     * Creates a RasterStretchRenderer using the 'min-max' stretch type.
+     * @param {number} min - The data value that maps to 0% (start) of the color ramp.
+     * @param {number} max - The data value that maps to 100% (end) of the color ramp.
+     * @param {Object} colorRamp - The ColorRamp object (e.g., from createManualMultipartColorRamp).
+     * @returns {RasterStretchRenderer}
+     */
+    function createMinMaxRenderer(min, max, colorRamp) {
+        return new RasterStretchRenderer({
+            stretchType: "min-max",
+            statistics: [{
+                min: min,
+                max: max,
+                avg: 0.0,
+                stddev: 0.0,
+            }],
+            // The values that define the range of the stretch
+            // min: min,
+            // max: max,
+            // Optional: If you want to clamp output values outside of the min/max range
+            // outputMin: 0,
+            // outputMax: 150, 
+            colorRamp: colorRamp,
+            dynamicRangeAdjustment: false // Usually set to false when min/max are explicitly defined
+        });
+    }
+
+    /**
+     * Creates a RasterStretchRenderer using the 'percent-clip' stretch type.
+     * @param {number} minPercent - The percentage of low values to clip (0 to 100).
+     * @param {number} maxPercent - The percentage of high values to clip (0 to 100).
+     * @param {Object} colorRamp - The ColorRamp object.
+     * @returns {RasterStretchRenderer}
+     */
+    function createPercentClipRenderer(minPercent, maxPercent, colorRamp) {
+        return new RasterStretchRenderer({
+            stretchType: "percent-clip",
+            // The percentage of the data distribution to clip from the low and high ends
+            minPercent: minPercent,
+            maxPercent: maxPercent,
+            colorRamp: colorRamp,
+            dynamicRangeAdjustment: false // Recommended to be false for consistent percentage clips
+        });
+    }
+
+    /**
+     * Creates the html setup for the corner panel for all layers in the config.
+     * @param {object} config - layer config
+     * @param {string} containderId - HTML id for the corner calcite panel.
+     * @returns {RasterStretchRenderer}
+     */
+    function renderLayerControls(config, containerId) {
+        const container = document.getElementById(containerId);
+        let html = `<calcite-accordion>`;
+
+        config.forEach(group => {
+            const isGroupVisible = group.items.some(item => {
+                // Check the layer objects for visibility, expand accordion if so
+                return item.layers.some(layer => layer && layer.visible === true);
+            });
+
+            const expanded = isGroupVisible ? " expanded" : "";
+            // console.log(`Group: ${group.category}, isVisible: ${isGroupVisible}, expanded: ${expanded}`)
+
+            html += `<calcite-accordion-item heading="${group.category}"${expanded}>`;
+
+            group.items.forEach(item => {
+                let layerVis = item.layers.some(layer => layer && layer.visible === true);
+                let checked = layerVis ? " checked" : "";
+                // -- Adds hover tooltip in panel ---
+                // html += `
+                //   <div class="layer-row">
+                //     <calcite-action icon="information" id="info-${item.id}" text="More Info" appearance="transparent" scale="s"></calcite-action>
+                //     <calcite-label layout="inline">
+                //       <calcite-checkbox id="${item.id}"${checked}></calcite-checkbox>
+                //       ${item.label}
+                //     </calcite-label>
+                //     <calcite-tooltip reference-element="info-${item.id}" placement="top">
+                //       ${item.info}
+                //     </calcite-tooltip>
+                //   </div>`;
+                // -- Removed hover tool tip - will be popup panel only
+                html += `
+          <div class="layer-row">
+            <calcite-action icon="information" id="info-${item.id}" text="More Info" appearance="transparent" scale="s"></calcite-action>
+            <calcite-label layout="inline">
+              <calcite-checkbox id="${item.id}"${checked}></calcite-checkbox>
+              ${item.label}
+            </calcite-label>
+          </div>`;
+            });
+
+            html += `</calcite-accordion-item>`;
+        });
+
+        html += `</calcite-accordion>`;
+        container.innerHTML = html;
+
+        // After injecting HTML, bind your events
+        setupVisibilityListeners(config);
+    }
+
+    // Manages UI visibility and toggles
+    function setupVisibilityListeners(config) {
+        config.forEach(group => {
+            group.items.forEach(item => {
+                const checkbox = document.getElementById(item.id);
+                if (checkbox) {
+                    checkbox.addEventListener("calciteCheckboxChange", (event) => {
+                        const isVisible = event.target.checked;
+                        item.layers.forEach(lyr => {
+                            if (lyr) lyr.visible = isVisible;
+                        });
+                    });
+                }
+            });
+        });
+    }
+
+    // Keep this variable at the top level so all functions can access/clear it
+    let featureLegendWidgets = [];
+    let visibilityWatcher = null;
+
+    async function updateInfoPanel(item) {
+        const infoPanel = document.getElementById("infoPanel");
+        const layers = item.layers; // All layers in the group
+
+        // 1. Ensure all layers are loaded
+        await Promise.all(layers.map(lyr => lyr.load()));
+
+        // 2. Generate Legend HTML for all layers
+        // We use Promise.all because getRasterLegendHTML is async
+        const legendSections = await Promise.all(layers.map(async (lyr) => {
+            let content = "";
+
+            if (!lyr.visible) {
+                content = `<div style="padding: 8px; background: #fff5f5; color: #c53030; font-size: 0.8rem; border-radius: 4px; text-align: center; border: 1px solid #feb2b2;">
+      <calcite-icon icon="view-hide" scale="s"></calcite-icon> ${lyr.title || "Layer"} Hidden
+    </div>`;
+            } else if (lyr.type === "imagery" || lyr.type === "imagery-tile") {
+                const key = lyr._legendKey;
+                const cfg = key ? imageryColorbars[key] : null;
+
+                if (cfg) {
+                    content = makeContinuousColorbarHTML(cfg);
+                } else {
+                    content = `<div style="font-size:0.85rem; color:#666;">Legend not configured.</div>`;
+                }
+            } else {
+                // FEATURE LAYER: create a container for Legend widget to render into
+                content = `<div id="legend-node-${lyr.uid}"></div>`;
+            }
+
+            return `<div class="layer-legend-block" style="margin-bottom: 10px;">
+    ${content}
+  </div>`;
+        }));
+
+        // 3. Generate Description HTML for all layers
+        const descriptionHTML = layers.map(lyr => {
+            const desc = lyr.portalItem?.description || lyr.serviceDescription || "No description available.";
+            return `<div class="desc-block" style="margin-bottom: 15px;">
+                      <strong style="font-size: 0.85rem; display: block; border-bottom: 1px solid #eee; margin-bottom: 5px;">${lyr.title}</strong>
+                      <div style="font-size: 0.9rem; line-height: 1.4;">${desc}</div>
+                  </div>`;
+        }).join("");
+
+        // 4. Set Initial Average Transparency (or just use the first layer's current state)
+        const initialOpacity = Math.round(layers[0].opacity * 100);
+
+        const descBlocks = layers
+            .map(lyr => {
+                const descRaw = (lyr.portalItem?.description || lyr.serviceDescription || "").trim();
+
+                // treat these as "no description"
+                const isEmpty = !descRaw || descRaw.toLowerCase() === "no description available.";
+                if (isEmpty) return "";
+
+                return `
+      <div class="desc-block" style="margin-top: 10px;">
+        <div style="font-size: 0.85rem; font-weight: 600; color:#333; margin-bottom:4px;">
+          ${lyr.title}
+        </div>
+        <div style="font-size: 0.9rem; line-height: 1.4; color:#444;">
+          ${descRaw}
+        </div>
+      </div>
+    `;
+            })
+            .filter(Boolean)
+            .join("");
+
+        // Only show the descriptions area if there's at least one description
+        const hasDescriptions = descBlocks.length > 0;
+
+        infoPanel.heading = item.label;
+        infoPanel.innerHTML = `
+  <div style="padding: 7px; display:flex; flex-direction:column; gap:5px;">
+    <div style="background:#f8f8f8; padding:5px; border-radius:4px;">
+      <calcite-label scale="s">
+        Layer Transparency
+        <calcite-slider id="group-opacity-slider" min="0" max="100" value="${initialOpacity}" step="1" label-handles></calcite-slider>
+      </calcite-label>
+    </div>
+
+    <div id="legends-area">${legendSections.join("")}</div>
+
+    ${hasDescriptions ? `<hr style="opacity:0.2; margin: 5px 0;">` : ""}
+
+    ${hasDescriptions
+                ? `<div class="metadata-content" style="overflow-y:auto;">${descBlocks}</div>`
+                : ""}
+  </div>
+  `;
+
+        // 5. Multi-Layer Transparency Event
+        const slider = document.getElementById("group-opacity-slider");
+        slider.addEventListener("calciteSliderInput", (event) => {
+            const val = event.target.value / 100;
+            layers.forEach(lyr => lyr.opacity = val);
+        });
+
+        // 6) Destroy any old Legend widgets (important because you overwrite innerHTML)
+        featureLegendWidgets.forEach(w => w.destroy());
+        featureLegendWidgets = [];
+
+        // 7) Initialize Feature Layer Legends (wait for layerview)
+        for (const lyr of layers) {
+            const isImagery = (lyr.type === "imagery" || lyr.type === "imagery-tile");
+            if (isImagery) continue;
+
+            // If you want legends even when layer is hidden, remove this guard:
+            if (!lyr.visible) continue;
+
+            const container = document.getElementById(`legend-node-${lyr.uid}`);
+            if (!container) continue;
+
+            try {
+                // This is the key: legend needs a layerview
+                await view.whenLayerView(lyr);
+
+                const lw = new Legend({
+                    view,
+                    layerInfos: [{ layer: lyr }],
+                    hideLayerTitles: true,
+                    container
+                });
+
+                featureLegendWidgets.push(lw);
+            } catch (e) {
+                console.warn("Legend failed for layer:", lyr.title, e);
+            }
+        }
+    }
+
+    // Change the global variable to an array to hold multiple watchers
+    let visibilityWatchers = [];
+
+    function setupInfoListeners(config) {
+        const infoWrapper = document.querySelector(".info-panel");
+        const infoPanel = document.getElementById("infoPanel");
+
+        function clearWatchers() {
+            visibilityWatchers.forEach(w => w.remove());
+            visibilityWatchers = [];
+        }
+
+        infoPanel.addEventListener("calcitePanelClose", () => {
+            infoWrapper.style.display = "none";
+            clearWatchers();
+            document.querySelectorAll('.layer-row calcite-action').forEach(a => {
+                a.active = false;
+                a.classList.remove("info-active");
+            });
+        });
+
+        config.forEach(group => {
+            group.items.forEach(item => {
+                const infoBtn = document.getElementById(`info-${item.id}`);
+                if (!infoBtn) return;
+
+                infoBtn.onclick = async () => {
+                    const isAlreadyActive = infoBtn.classList.contains("info-active");
+
+                    document.querySelectorAll('.layer-row calcite-action').forEach(a => {
+                        a.active = false;
+                        a.classList.remove("info-active");
+                    });
+
+                    if (isAlreadyActive) {
+                        infoWrapper.style.display = "none";
+                        clearWatchers();
+                        return;
+                    }
+
+                    infoBtn.active = true;
+                    infoBtn.classList.add("info-active");
+                    infoWrapper.style.display = "flex";
+                    infoPanel.closed = false;
+
+                    clearWatchers();
+
+                    // Initial render
+                    await updateInfoPanel(item);
+
+                    // Create a watcher for EVERY layer in the group
+                    item.layers.forEach(lyr => {
+                        const watcher = lyr.watch("visible", () => {
+                            updateInfoPanel(item);
+                        });
+                        visibilityWatchers.push(watcher);
+                    });
+                };
+            });
+        });
+    }
+
+    // ============================================================================
+    //                        HAZARD LAYER DEFINITIONS 
+    // ============================================================================
+
+    // ============================ SMOKE LAYER =============================
+    const smokeLayer = new ImageryTileLayer({
+        portalItem: { id: SMOKE_LAYER_ITEM_ID },
+        opacity: 1.0,
+        blendMode: "multiply",
+        visible: false,
+        title: "Smoke hazard"
+    });
+    smokeLayer._legendKey = "Smoke";
+
+    // APPROACH: CUSTOM COLOR RAMP
+    // Wait for the layer to load to ensure rendering can happen correctly
+    smokeLayer.load().then(() => {
+        // Get the specified Esri Color Ramp
+        const smokeColorRamp = createManualMultipartColorRamp(bluered10);
+
+        if (smokeColorRamp) {
+            const smokeRenderer = createPercentClipRenderer(0.5, 0.5, smokeColorRamp);
+            smokeLayer.renderer = smokeRenderer;
+            console.log("Successfully applied custom MultipartColorRamp.");
+        }
+
+    }).catch(error => {
+        console.error("Error loading ImageryLayer or applying renderer:", error);
+    });
+
+    // ============================ ROCKFALL LAYER =============================
+    const rockfallLayer = new ImageryTileLayer({
+        portalItem: { id: ROCKFALL_LAYER_ITEM_ID },
+        opacity: 0.8,
+        visible: false,
+        title: "Rockfall hazard"
+    });
+    rockfallLayer._legendKey = "Rockfall";
+
+    // APPROACH: CUSTOM COLOR RAMP
+    // Wait for the layer to load to ensure rendering can happen correctly
+    rockfallLayer.load().then(() => {
+        // Get the specified Esri Color Ramp
+        const rockfallColorRamp = createManualMultipartColorRamp(rockfall);
+
+        if (rockfallColorRamp) {
+            const rockfallRenderer = createPercentClipRenderer(75, 0.5, rockfallColorRamp);
+            rockfallLayer.renderer = rockfallRenderer;
+            console.log("Successfully applied custom MultipartColorRamp.");
+        }
+
+    }).catch(error => {
+        console.error("Error loading ImageryLayer or applying renderer:", error);
+    });
+
+    // ============================ DEBRIS FLOW LAYER =============================
+    const debrisLayer = new ImageryTileLayer({
+        portalItem: { id: DEBRISF_LAYER_ITEM_ID },
+        opacity: 0.9,
+        visible: false,
+        title: "Debris flow hazard"
+    });
+    debrisLayer._legendKey = "Debris";
+
+    // APPROACH: CUSTOM COLOR RAMP
+    // Wait for the layer to load to ensure rendering can happen correctly
+    debrisLayer.load().then(() => {
+        // Get the specified Esri Color Ramp
+        const debrisColorRamp = createManualMultipartColorRamp(debris);
+
+        if (debrisColorRamp) {
+            // const debrisRenderer = createPercentClipRenderer(50, 0.5, debrisColorRamp);
+            const debrisRenderer = createMinMaxRenderer(0.3, 1.0, debrisColorRamp);
+            debrisLayer.renderer = debrisRenderer;
+            console.log("Successfully applied custom MultipartColorRamp.");
+        }
+
+    }).catch(error => {
+        console.error("Error loading ImageryLayer or applying renderer:", error);
+    });
+    // ============================ EXTREME HEAT LAYER =============================
+    const lstLayer = new ImageryTileLayer({
+        portalItem: { id: LST_LAYER_ITEM_ID },
+        opacity: 0.9,
+        visible: false,
+        title: "Extreme Heat hazard"
+    });
+    lstLayer._legendKey = "LST";
+
+    // APPROACH: CUSTOM COLOR RAMP
+    // Wait for the layer to load to ensure rendering can happen correctly
+    lstLayer.load().then(() => {
+        // Get the specified Esri Color Ramp
+        const lstColorRamp = createManualMultipartColorRamp(inferno);
+        const lstRenderer = createPercentClipRenderer(0.5, 0.5, lstColorRamp);
+        lstLayer.renderer = lstRenderer;
+        console.log("Successfully applied custom MultipartColorRamp.");
+
+    }).catch(error => {
+        console.error("Error loading ImageryLayer or applying renderer:", error);
+    });
+
+
+    // ============================ NDVI LAYER =============================
+    const ndviLayer = new ImageryTileLayer({
+        portalItem: { id: NDVI_LAYER_ITEM_ID },
+        opacity: 0.7,
+        visible: false,
+        title: "Drought Susceptibility"
+    });
+    ndviLayer._legendKey = "NDVI";
+
+    // APPROACH: CUSTOM COLOR RAMP
+    // Wait for the layer to load to ensure rendering can happen correctly
+    ndviLayer.load().then(() => {
+        console.log("NDVI renderer block running v2026-01-12-1");
+        // Get the specified Esri Color Ramp
+        const ndviColorRamp = createManualMultipartColorRamp(dry); //, dry_positions);
+        const ndviRenderer = createMinMaxRenderer(-0.2, 0.2, ndviColorRamp);
+        ndviRenderer.legendOptions = {
+            title: "Drought susceptibility (NDVI anomaly)",
+            minLabel: "Lower",
+            maxLabel: "Higher"
+        };
+
+        ndviLayer.renderer = ndviRenderer;
+        console.log("Successfully applied custom MultipartColorRamp.");
+
+    }).catch(error => {
+        console.error("Error loading ImageryLayer or applying renderer:", error);
+    });
+
+    // ============================ FLOOD LAYERS =============================
+    // --- Flood protection dikes ---
+    const dikesLayer = new FeatureLayer({
+        portalItem: { id: DIKES_LAYER_ITEM_ID },
+        title: "Flood Protection Dikes",
+        opacity: 1,
+        visible: false,
+        popupEnabled: true
+    });
+
+    // --- Flood hazard imagery: darker, opaque blue stretch ---
+    const floodRenderer = {
+        type: "raster-stretch",
+        stretchType: "standard-deviation",
+        numberOfStandardDeviations: 2,
+        statistics: [{
+            min: 0.00006103515625,
+            max: 7.69512939453125,
+            avg: 1.1509735879299638,
+            stddev: 0.90648640678161641
+        }],
+        gamma: [0.6],
+        colorRamp: {
+            type: "algorithmic",
+            fromColor: [198, 219, 239, 255], // lighter blue
+            toColor: [8, 48, 107, 255], // deep blue
+            algorithm: "lab-lch"
+        }
+    };
+    const floodLayer = new ImageryTileLayer({
+        portalItem: { id: FLOOD_LAYER_ITEM_ID },
+        renderer: floodRenderer,
+        opacity: 1,
+        visible: false,
+        // Update the flood layer title to clarify return period and clear-water nature
+        title: "Clear-water Flood hazard (200-year event)"
+    });
+    floodLayer._legendKey = "Flood";
+
+    const floodExtentLayer = new FeatureLayer({
+        portalItem: { id: FLOOD_OUTLINE_ITEM_ID },
+        title: "Flood extent outline",
+        renderer: {
+            type: "simple",
+            symbol: {
+                type: "simple-fill",
+                color: [0, 0, 0, 0],
+                outline: {
+                    color: [8, 48, 107, 1],
+                    width: 2
+                }
+            }
+        },
+        opacity: 1,
+        visible: false,
+        popupEnabled: true
+    });
+
+    // ============================ WILDFIRE LAYERS =============================
+    // --- Fire Break ---
+    const fuelBreaksLayer = new FeatureLayer({
+        portalItem: { id: FUELBREAKS_LAYER_ITEM_ID },
+        title: "Fuel Breaks",
+        opacity: 1,
+        visible: false,
+        popupEnabled: true
+    });
+
+    // --- Fire Managed Areas ---
+    const fuelMngdLayer = new FeatureLayer({
+        portalItem: { id: FUELMNG_LAYER_ITEM_ID },
+        title: "Fuel Managed Areas",
+        opacity: 1,
+        visible: false,
+        popupEnabled: true
+    });
+
+    // --- Fire Risk Class ---
+    const fireRiskLayer = new FeatureLayer({
+        portalItem: { id: RISKCLS_LAYER_ITEM_ID },
+        title: "Wildfire Risk",
+        opacity: 1,
+        visible: false,
+        popupEnabled: true
+    });
+
+    // --- Fire Threat Class ---
+    const fireThreatLayer = new FeatureLayer({
+        portalItem: { id: THREATCLS_LAYER_ITEM_ID },
+        title: "Wildfire PSTA Threat Class",
+        opacity: 1,
+        visible: false,
+        popupEnabled: true
+    });
+
+    // --- Fire Fuel Types Layer ---
+    // This layer displays spatial distribution of fuel types for wildfire modelling.
+    const fuelLayer = new FeatureLayer({
+        portalItem: { id: FUELTYPES_LAYER_ITEM_ID },
+        title: "Fire Fuels",
+        opacity: 1,
+        visible: false,
+        popupEnabled: true
+    });
+
+    // ============================ COMMUNITY POINTS LAYERS =============================
+    // These layers represent various points of interest and facilities such as
+    // critical infrastructure, schools, police stations, medical centres, etc.
+    // They are pulled from the feature service identified by POINTS_ITEM_ID.
+    // We apply explicit simple-marker renderers so symbols remain visible and
+    // consistent across all zoom levels.
+
+    // JAMIES OLD 
+    // function makePointRenderer(colorRGBA) {
+    //   return {
+    //     type: "simple",
+    //     symbol: {
+    //       type: "simple-marker",
+    //       style: "circle",
+    //       size: 16,
+    //       color: colorRGBA,
+    //       outline: {
+    //         color: [255, 255, 255, 0.95],
+    //         width: 1.2
+    //       }
+    //     }
+    //   };
+    // }
+
+    // COLES NEW
+    function rgba(r, g, b, a = 1) {
+        return [r, g, b, a];
+    }
+
+    function makeSimpleRenderer(symbol) {
+        return { type: "simple", symbol };
+    }
+
+    function makeSimpleMarkerSymbol({
+        style = "circle",
+        size = 14,
+        color = [0, 0, 0, 0.9],
+        outlineColor = [255, 255, 255, 0.95],
+        outlineWidth = 1.15,
+        angle = 0
+    } = {}) {
+        return {
+            type: "simple-marker",
+            style,
+            size,
+            color,
+            angle,
+            outline: {
+                color: outlineColor,
+                width: outlineWidth
+            }
+        };
+    }
+
+    // picture-marker helper for shapes not supported by simple-marker
+    function svgDataUrl(svgString) {
+        return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svgString)}`;
+    }
+
+    function makeHexagonPictureMarker({
+        fill = rgba(255, 127, 0, 0.95),
+        stroke = rgba(255, 255, 255, 0.95),
+        strokeWidth = 2,
+        size = 18
+    } = {}) {
+        // SVG viewBox 0 0 100 100; pointy-top hex
+        const [fr, fg, fb, fa] = fill;
+        const [sr, sg, sb, sa] = stroke;
+
+        const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
+      <polygon
+        points="50,5 90,27 90,73 50,95 10,73 10,27"
+        fill="rgba(${fr},${fg},${fb},${fa})"
+        stroke="rgba(${sr},${sg},${sb},${sa})"
+        stroke-width="${strokeWidth}"
+        stroke-linejoin="round"
+      />
+    </svg>
+  `.trim();
+
+        return {
+            type: "picture-marker",
+            url: svgDataUrl(svg),
+            width: size,
+            height: size
+        };
+    }
+
+    // ---------- Critical Infrastructure renderer ----------
+    function makeLollipopPictureMarker({
+        fill = [123, 50, 148, 0.95],
+        stroke = [255, 255, 255, 0.95],
+        stemWidth = 9,
+        widthPx = 20,
+        outlineWidth = 4,
+        heightPx = Math.round(widthPx * 160 / 100),
+    } = {}) {
+        const [fr, fg, fb, fa] = fill;
+        const [sr, sg, sb, sa] = stroke;
+
+        const svg = `
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 160">
+        <!-- stem outline -->
+        <line x1="50" y1="70" x2="50" y2="130"
+              stroke="rgba(${sr},${sg},${sb},${sa})"
+              stroke-width="${stemWidth + outlineWidth * 2}"
+              stroke-linecap="round"/>
+        <!-- stem fill -->
+        <line x1="50" y1="70" x2="50" y2="130"
+              stroke="rgba(${fr},${fg},${fb},${fa})"
+              stroke-width="${stemWidth}"
+              stroke-linecap="round"/>
+
+        <!-- head outline -->
+        <circle cx="50" cy="48" r="30"
+                fill="rgba(${fr},${fg},${fb},${fa})"
+                stroke="rgba(${sr},${sg},${sb},${sa})"
+                stroke-width="${outlineWidth * 2}" />
+      </svg>
+      `.trim();
+
+        return {
+            type: "picture-marker",
+            url: svgDataUrl(svg),
+            width: widthPx,
+            height: heightPx,
+            yoffset: heightPx / 2
+        };
+    }
+
+    function makeCriticalInfrastructureRenderer() {
+        return {
+            type: "unique-value",
+            field: "Priority",
+            uniqueValueInfos: [
+                {
+                    value: "High",
+                    label: "High priority",
+                    symbol: makeLollipopPictureMarker({
+                        fill: rgba(201, 25, 25, 0.95),
+                        heightPx: 26,
+                        widthPx: 18
+                    })
+                },
+                {
+                    value: "Medium",
+                    label: "Medium priority",
+                    symbol: makeLollipopPictureMarker({
+                        fill: rgba(241, 176, 34, 0.95),
+                        heightPx: 26,
+                        widthPx: 18
+                    })
+                },
+                {
+                    value: "Low",
+                    label: "Low priority",
+                    symbol: makeLollipopPictureMarker({
+                        fill: rgba(93, 172, 4, 0.95),
+                        heightPx: 26,
+                        widthPx: 18
+                    })
+                }
+            ]
+        };
+    }
+
+
+    const criticalInfrastructureLayer = new FeatureLayer({
+        portalItem: { id: POINTS_ITEM_ID },
+        layerId: 4,
+        title: "Critical Infrastructure",
+        visible: false,
+        opacity: 1,
+        popupEnabled: true,
+
+        // Hard filter so "Other/Unknown" are completely excluded
+        definitionExpression: "Priority IN ('High','Medium','Low')",
+
+        renderer: makeCriticalInfrastructureRenderer(),
+        minScale: 0,
+        maxScale: 0
+    });
+
+    const pointsOfInterestLayer = new FeatureLayer({
+        portalItem: { id: POINTS_ITEM_ID },
+        layerId: 5,
+        title: "Points of Interest",
+        visible: false,
+        opacity: 1,
+        popupEnabled: true,
+        renderer: makeSimpleRenderer(
+            makeSimpleMarkerSymbol({
+                style: "circle",
+                size: 14,
+                color: rgba(255, 105, 180, 0.95)
+            })
+        ),
+        minScale: 0,
+        maxScale: 0
+    });
+
+    const schoolLayer = new FeatureLayer({
+        portalItem: { id: POINTS_ITEM_ID },
+        layerId: 6,
+        title: "School",
+        visible: false,
+        opacity: 1,
+        popupEnabled: true,
+        renderer: makeSimpleRenderer(
+            makeSimpleMarkerSymbol({
+                style: "triangle",
+                angle: 0, // up
+                size: 16,
+                color: rgba(69, 122, 122, 0.95)
+            })
+        ),
+        minScale: 0,
+        maxScale: 0
+    });
+
+    const policeStationLayer = new FeatureLayer({
+        portalItem: { id: POINTS_ITEM_ID },
+        layerId: 7,
+        title: "Police Station",
+        visible: false,
+        opacity: 1,
+        popupEnabled: true,
+        renderer: makeSimpleRenderer(
+            makeSimpleMarkerSymbol({
+                style: "triangle",
+                angle: 180, // down
+                size: 16,
+                color: rgba(55, 126, 184, 0.95)
+            })
+        ),
+        minScale: 0,
+        maxScale: 0
+    });
+
+    const medicalCentreLayer = new FeatureLayer({
+        portalItem: { id: POINTS_ITEM_ID },
+        layerId: 8,
+        title: "Medical Centre",
+        visible: false,
+        opacity: 1,
+        popupEnabled: true,
+        renderer: makeSimpleRenderer(
+            makeSimpleMarkerSymbol({
+                style: "cross",
+                size: 18,
+                color: rgba(228, 26, 28, 0.95),
+                outlineColor: rgba(228, 26, 28, 0.95),
+                outlineWidth: 4.
+            })
+        ),
+        minScale: 0,
+        maxScale: 0
+    });
+
+    const fireDepartmentLayer = new FeatureLayer({
+        portalItem: { id: POINTS_ITEM_ID },
+        layerId: 9,
+        title: "Fire Department",
+        visible: false,
+        opacity: 1,
+        popupEnabled: true,
+        renderer: makeSimpleRenderer(
+            makeHexagonPictureMarker({
+                fill: rgba(255, 127, 0, 0.95),
+                stroke: rgba(255, 255, 255, 0.95),
+                strokeWidth: 6,
+                size: 18
+            })
+        ),
+        minScale: 0,
+        maxScale: 0
+    });
+
+    // ============================================================================
+    //                        BASEMAP LAYER DEFINITIONS
+
+    // ============================================================================
+    const roadsLayer = new FeatureLayer({
+        portalItem: { id: ROADS_ITEM_ID },
+        title: "Roads Overlay",
+        opacity: 1,
+        visible: false,
+        popupEnabled: false
+    });
+
+    // --- Neighbourhoods: transparent fill, neutral grey outline ---
+    const neighbourhoodsLayer = new FeatureLayer({
+        portalItem: { id: NEIGHBOURHOOD_ITEM_ID },
+        layerId: 12,
+        title: "Neighbourhoods",
+        renderer: {
+            type: "simple",
+            symbol: {
+                type: "simple-fill",
+                color: [0, 0, 0, 0],
+                outline: {
+                    // Use a neutral grey to differentiate from flood outlines
+                    color: [150, 150, 150, 1],
+                    width: 1
+                }
+            }
+        },
+        opacity: 1,
+        popupEnabled: true,
+        // Provide a custom labeling expression to rename the Wedgewoods
+        // neighbourhood to Heliport.  This expression tries several
+        // common field names (Name, NAME, name) and falls back to the
+        // first non‑empty value.  If the neighbourhood name equals
+        // "Wedgewoods", it returns "Heliport"; otherwise it returns
+        // the original name.  Labels are enabled so that neighbourhoods
+        // continue to display their names on the map without affecting
+        // pop‑ups.
+        labelingInfo: [
+            {
+                labelExpressionInfo: {
+                    // Use the ASSETNAME field for neighbourhood labels.  If the
+                    // neighbourhood's ASSETNAME is "Wedgewoods", rename it to
+                    // "Heliport"; otherwise use the ASSETNAME value directly.
+                    expression: "IIF($feature.ASSETNAME == 'Wedgewoods', 'Heliport', $feature.ASSETNAME)"
+                },
+                symbol: {
+                    type: "text",
+                    color: [80, 80, 80, 0.9],
+                    haloSize: 1,
+                    haloColor: [255, 255, 255, 0.9],
+                    font: {
+                        family: "sans-serif",
+                        size: 10,
+                        weight: "normal"
+                    }
+                },
+                labelPlacement: "always-horizontal" // "center-center" this isn't valid so it was defaulting to always horizontal anyway
+            }
+        ],
+        // Make sure labels are visible so ASSETNAME values are shown on the map.
+        labelsVisible: true
+    });
+
+    // --- RMOW Boundary: subtle outline, no fill (always on; not in toggle panel) ---
+    const rmowBoundaryLayer = new FeatureLayer({
+        portalItem: { id: POINTS_ITEM_ID },
+        layerId: 11,
+        title: "RMOW Boundary",
+        opacity: 1,
+        visible: true,
+        popupEnabled: false,
+        renderer: {
+            type: "simple",
+            symbol: {
+                type: "simple-fill",
+                color: [0, 0, 0, 0],
+                outline: {
+                    color: [120, 120, 120, 0.35],
+                    width: 1
+                }
+            }
+        }
+    });
+
+    // --- Building footprints: transparent fill with dark outline ---
+    const buildingsLayer = new FeatureLayer({
+        portalItem: { id: BUILDINGS_ITEM_ID },
+        title: "Building Footprints",
+        opacity: 1,
+        popupEnabled: false,
+        renderer: {
+            type: "simple",
+            symbol: {
+                type: "simple-fill",
+                color: [0, 0, 0, 0], // transparent interior
+                outline: {
+                    color: [0, 0, 0, 0.6],
+                    width: 0.7
+                }
+            }
+        }
+    });
+
+    // ============================================================================
+    //                        VULNERABILITY LAYER DEFINITIONS 
+    // ============================================================================
+    // The vulnerability section introduces new thematic layers for census variables.
+    // Each entry in the configuration below defines how to map an attribute from
+    // the dissemination‑area layer.  Additional entries can be appended to the
+    // array to visualise other variables (e.g. low income, disability).  The
+    // breaks and colours assume percentage values between 0 and 1.
+
+    /**
+     * Builds a simple class‑breaks renderer for vulnerability variables.
+     * The provided breaks array should contain absolute percentage values (0–100)
+     * defining the boundaries between classes.  Colours should contain one fewer
+     * entry than breaks and will be assigned in order.  Labels are generated
+     * directly from the break values without further scaling.
+     *
+     * @param {number[]} breaks - Array of breakpoints [0, …, 1].
+     * @param {string[]} colors - Array of hex colours.
+     * @param {string} fieldName - Attribute field to classify.
+     * @returns {Object} Esri class breaks renderer.
+     */
+    function buildVulnerabilityRenderer(breaks, colors, fieldName) {
+        const classBreakInfos = [];
+        for (let i = 0; i < breaks.length - 1; i++) {
+            classBreakInfos.push({
+                minValue: breaks[i],
+                maxValue: breaks[i + 1],
+                symbol: {
+                    type: "simple-fill",
+                    color: colors[i],
+                    outline: {
+                        color: [80, 80, 80, 0.5],
+                        width: 0.5
+                    }
+                },
+                label: `${breaks[i]}% – ${breaks[i + 1]}%`
+            });
+        }
+        return {
+            type: "class-breaks",
+            field: fieldName,
+            classBreakInfos: classBreakInfos,
+            defaultSymbol: {
+                type: "simple-fill",
+                color: [255, 255, 255, 0.1],
+                outline: {
+                    color: [80, 80, 80, 0.3],
+                    width: 0.5
+                }
+            },
+            defaultLabel: "No data"
+        };
+    }
+
+    // Configuration objects for each vulnerability variable.  To add more
+    // variables, copy an entry and update the id, label, field, breaks and
+    // colours accordingly.  The breaks below divide percentages into five
+    // classes (0–20%, 20–40%, … 80–100%).
+    const vulnerabilityConfigs = [
+        {
+            id: "seniorVulnToggle",
+            label: "Population 65+ (%)",
+            field: "__65_and_older",
+            // Seniors quintile breaks (approximate) based on available dissemination‑area data
+            // 0%, 20th, 40th, 60th, 80th and max percentile values
+            breaks: [0, 5.3, 7.2, 8.1, 10.2, 17],
+            colors: palPurples5,
+            visible: false
+        },
+        {
+            id: "youngVulnToggle",
+            label: "Children 0-4 (%)",
+            field: "__0_to_4_years_old",
+            // Children aged 0–4 quintile breaks (approximate) from 0% to 6.53%
+            breaks: [0, 2.0, 2.4, 2.9, 3.9, 6.53],
+            colors: palBlues5,
+            visible: false
+        },
+        {
+            id: "lowIncomeVulnToggle",
+            label: "Low Income Households (%)",
+            field: "__lico",
+            // Low‑income household quintile breaks (approximate) from 0% to 6.53%
+            breaks: [0, 2.0, 2.4, 2.9, 4.1, 6.53],
+            colors: palReds5,
+            visible: false
+        },
+        {
+            id: "renterVulnToggle",
+            label: "Renters (%)",
+            field: "__renter",
+            // Renter quintile breaks (approximate) from 0% to 81.08%
+            breaks: [0, 28.1, 37.4, 47.4, 57.2, 81.1],
+            colors: palOranges5,
+            visible: false
+        },
+        {
+            id: "livingAloneVulnToggle",
+            label: "Living Alone (%)",
+            field: "__living_alone",
+            // Living‑alone quintile breaks (approximate) matching renter distribution
+            // Updated breaks based on dev branch (0–8, 8–11, 11–13, 13–13.5, 13.5–17.3)
+            breaks: [0, 8, 11, 13, 13.5, 17.3],
+            colors: palGreens5,
+            visible: false
+        }
+    ];
+
+    // Placeholder for the instantiated layers.  Each config will push its layer
+    // into this array so we can spread it into layerOrder later.
+    const vulnerabilityLayers = [];
+
+    // Outline layer for pop‑ups.  This layer draws DA boundaries without
+    // colouring them and lists key vulnerability attributes (e.g. tempthresh_2021)
+    // in its pop‑up.  It is always present in the map (opacity 0) so that
+    // clicking on a polygon will reveal vulnerability information, but it no longer
+    // appears in the layer toggle panel.
+    const vulnerabilityOutlineLayer = new FeatureLayer({
+        portalItem: { id: VULNERABILITY_LAYER_ITEM_ID },
+        title: "DA boundaries (popups)",
+        opacity: 0,
+        visible: true,
+        popupEnabled: false,
+        renderer: {
+            type: "simple",
+            symbol: {
+                type: "simple-fill",
+                color: [0, 0, 0, 0],
+                outline: {
+                    color: [120, 120, 120, 0.6],
+                    width: 1.2
+                }
+            }
+        },
+        popupTemplate: {
+            title: "Dissemination Area",
+            content: [
+                {
+                    type: "fields",
+                    fieldInfos: [
+                        {
+                            fieldName: "__65_and_older",
+                            label: "Population 65+ (%)",
+                            format: { digitSeparator: true, places: 2 }
+                        },
+                        {
+                            fieldName: "__0_to_4_years_old",
+                            label: "Children 0-4 (%)",
+                            format: { digitSeparator: true, places: 2 }
+                        },
+                        {
+                            fieldName: "__lico",
+                            label: "Low Income Households (%)",
+                            format: { digitSeparator: true, places: 2 }
+                        },
+                        {
+                            fieldName: "__renter",
+                            label: "Renters (%)",
+                            format: { digitSeparator: true, places: 2 }
+                        },
+                        {
+                            fieldName: "__living_alone",
+                            label: "Living Alone (%)",
+                            format: { digitSeparator: true, places: 2 }
+                        },
+                        /* removed tempthresh_2021: user requested to show only specified fields */
+                    ]
+                }
+            ]
+        },
+        outFields: ["*"]
+    });
+
+    // Instantiate layers for each vulnerability configuration.
+    vulnerabilityConfigs.forEach(cfg => {
+        let renderer = null;
+        if (cfg.breaks && cfg.colors) {
+            renderer = buildVulnerabilityRenderer(cfg.breaks, cfg.colors, cfg.field);
+            // Override legend title to use the layer label
+            // renderer.legendOptions = { title: cfg.label };
+            renderer.legendOptions = { title: " " };
+        }
+        const layer = new FeatureLayer({
+            portalItem: { id: VULNERABILITY_LAYER_ITEM_ID },
+            title: cfg.label,
+            renderer: renderer,
+            opacity: 0.9,
+            visible: cfg.visible,
+            popupEnabled: false,
+            popupTemplate: {
+                title: "Dissemination Area",
+                content: [
+                    {
+                        type: "fields",
+                        // Display only the standard vulnerability fields across all layers
+                        fieldInfos: [
+                            {
+                                fieldName: "__65_and_older",
+                                label: "Population 65+ (%)",
+                                format: { digitSeparator: true, places: 2 }
+                            },
+                            {
+                                fieldName: "__0_to_4_years_old",
+                                label: "Children 0-4 (%)",
+                                format: { digitSeparator: true, places: 2 }
+                            },
+                            {
+                                fieldName: "__lico",
+                                label: "Low Income Households (%)",
+                                format: { digitSeparator: true, places: 2 }
+                            },
+                            {
+                                fieldName: "__renter",
+                                label: "Renters (%)",
+                                format: { digitSeparator: true, places: 2 }
+                            },
+                            {
+                                fieldName: "__living_alone",
+                                label: "Living Alone (%)",
+                                format: { digitSeparator: true, places: 2 }
+                            }
+                        ]
+                    }
+                ]
+            },
+            outFields: ["*"]
+        });
+        // Store the layer back on the config for UI mapping.
+        cfg.layer = layer;
+        vulnerabilityLayers.push(layer);
+    });
+
+    // ===========================================================================
+    //                        Build layers and toggles
+    // ===========================================================================
+    // Add layers in desired order.  Vulnerability layers and the outline layer
+    // are inserted before flood layers so they appear on top of basemap and
+    // hazard layers but below flood overlays.
+    const layerOrder = [
+        // Always draw community facilities on top of all other layers so points remain visible
+        referenceLayer,
+        schoolLayer,
+        policeStationLayer,
+        medicalCentreLayer,
+        fireDepartmentLayer,
+        pointsOfInterestLayer,
+        criticalInfrastructureLayer,
+        // Neighbourhood polygons remain above buildings for pop‑ups
+        neighbourhoodsLayer,
+        // roadsLayer,
+        buildingsLayer,
+        rmowBoundaryLayer,
+        smokeLayer,
+        rockfallLayer,
+        debrisLayer,
+        fuelBreaksLayer,
+        fuelMngdLayer,
+        fireRiskLayer,
+        fireThreatLayer,
+        fuelLayer,
+        lstLayer,
+        ndviLayer,
+        ...vulnerabilityLayers,
+        vulnerabilityOutlineLayer,
+        // Flood-related layers
+        dikesLayer,
+        floodExtentLayer,
+        floodLayer
+    ];
+    webmap.addMany(layerOrder);
+
+    // --- View + widgets ---
+    const view = new MapView({
+        container: "viewDiv",
+        map: webmap,
+        popup: {
+            dockEnabled: true,
+            dockOptions: {
+                position: "bottom-right",
+                buttonEnabled: false
+            }
+        }
+    });
+    view.when().then(function () {
+        const scaleBar = new ScaleBar({
+            view,
+            unit: "metric",
+        });
+        view.ui.add(scaleBar, "bottom-right");
+        const bottomCenterContainer = document.createElement("div");
+        bottomCenterContainer.className = "bottom-center-scalebar";
+        view.ui.add(bottomCenterContainer, "manual");
+        bottomCenterContainer.appendChild(scaleBar.container);
+        floodLayer.when().then(function () {
+            if (floodLayer.fullExtent) {
+                view.goTo(floodLayer.fullExtent.expand(1.1)).catch(() => { });
+            }
+        }).catch(function (error) {
+            console.error("Flood layer failed to load:", error);
+        });
+
+        // -------- Optional: explicitly confirm ordering -------
+        webmap.when().then(function () {
+            layerOrder.forEach((layer, index) => {
+                // webmap.layers.length - 1 is the top position
+                const position = webmap.layers.length - (index + 1);
+                webmap.reorder(layer, position);
+            });
+        });
+    });
+
+    // --- UI toggles ---
+    const uiMappings = [
+        {
+            category: "Community Context",
+            items: [
+                { id: "referenceToggle", layers: [referenceLayer], label: "Map Reference", info: "B" },
+                { id: "buildingsToggle", layers: [buildingsLayer], label: "Building Footprints", info: "B" },
+                { id: "neighbourhoodsToggle", layers: [neighbourhoodsLayer], label: "Neighbourhoods", info: "N" },
+                // { id: "roadsToggle", layers: [roadsLayer], label: "Roads Overlay", info: "" },
+                { id: "criticalToggle", layers: [criticalInfrastructureLayer], label: "Critical Infrastructure", info: "" },
+                { id: "poiToggle", layers: [pointsOfInterestLayer], label: "Points of Interest", info: "" },
+                { id: "schoolToggle", layers: [schoolLayer], label: "Schools", info: "" },
+                { id: "policeToggle", layers: [policeStationLayer], label: "Police Stations", info: "" },
+                { id: "medicalToggle", layers: [medicalCentreLayer], label: "Medical Centres", info: "" },
+                { id: "fireToggle", layers: [fireDepartmentLayer], label: "Fire Departments", info: "" }
+            ]
+        },
+        {
+            category: "Air Quality",
+            items: [
+                { id: "smokeToggle", layers: [smokeLayer], label: "3-year Smoke PM2.5 Exceedance Days", info: "S" },
+            ]
+        },
+        {
+            category: "Landslide",
+            items: [
+                { id: "rockfallToggle", layers: [rockfallLayer], label: "Rockfall Susceptibility", info: "" },
+                { id: "debrisToggle", layers: [debrisLayer], label: "Debris Flow Susceptibility", info: "" },
+            ]
+        },
+        {
+            category: "Wildfire",
+            items: [
+                { id: "fuelBreakToggle", layers: [fuelBreaksLayer, fuelMngdLayer], label: "Fuel Breaks and Fire Managed Areas", info: "" },
+                { id: "fireRiskToggle", layers: [fireRiskLayer], label: "Wildfire Risk Class ≥ Moderate", info: "" },
+                { id: "fireThreatToggle", layers: [fireThreatLayer], label: "WUI Fire Threat Class ≥ 6", info: "" },
+                { id: "fuelToggle", layers: [fuelLayer], label: "Fire Fuel Types", info: "" },
+            ]
+        },
+        {
+            category: "Extreme Heat",
+            items: [
+                { id: "lstToggle", layers: [lstLayer], label: "Extreme Heat Hazard", info: "" },
+            ]
+        },
+        {
+            category: "Drought",
+            items: [
+                { id: "ndviToggle", layers: [ndviLayer], label: "Drought Susceptibility", info: "NDVI Anomaly" },
+            ]
+        },
+        {
+            category: "Flooding",
+            items: [
+                { id: "dikesToggle", layers: [dikesLayer], label: "Flood Protection Dikes", info: "" },
+                { id: "floodExtentToggle", layers: [floodExtentLayer], label: "Flood Extent Outline", info: "" },
+                { id: "floodToggle", layers: [floodLayer], label: "Clear-water Flood Hazard\n(200-year event)", info: "" }
+            ]
+        },
+        {
+            category: "Vulnerability Layers",
+            items: [
+                // Generate a toggle for each vulnerability variable
+                ...vulnerabilityConfigs.map(cfg => ({
+                    id: cfg.id,
+                    layers: [cfg.layer],
+                    label: cfg.label,
+                    info: ""
+                }))
+            ]
+        },
+
+
+    ];
+
+    renderLayerControls(uiMappings, "layerPanel");
+    setupVisibilityListeners(uiMappings);
+    setupInfoListeners(uiMappings);
+
+});

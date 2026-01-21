@@ -6,12 +6,27 @@
   <title>Whistler Hazard Map</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <!-- ArcGIS JS API -->
+  <!-- ArcGIS JS API (AMD loader lives here) -->
   <link rel="stylesheet" href="https://js.arcgis.com/4.30/esri/themes/light/main.css" />
-  <script src="https://js.arcgis.com/4.30/"></script>
+
   <script type="module" src="https://js.arcgis.com/calcite-components/3.3.3/calcite.esm.js"></script>
-  <link rel="stylesheet" type="text/css" href="https://js.arcgis.com/calcite-components/3.3.3/calcite.css" />
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="https://js.arcgis.com/calcite-components/3.3.3/calcite.css" />
+
+
+  <script>
+    (function () {
+      var base = location.pathname.replace(/\/[^/]*$/, "");
+      window.dojoConfig = {
+        async: true,
+        packages: [
+          { name: "app", location: base + "/js" },
+          { name: "js", location: base + "/js" } // allow require(["js/..."])
+        ]
+      };
+    })();
+  </script>
+
+  <script src="https://js.arcgis.com/4.30/"></script>
 
   <style>
     :root {
@@ -195,7 +210,6 @@
       object-fit: contain;
     }
 
-
     /* Mobile-ish: shrink logos and panel */
     @media (max-width: 768px) {
       .topstrip {
@@ -268,7 +282,6 @@
 <body>
   <header class="topstrip">
     <div class="topstrip-left">
-      <!-- Put logo-rmow.png in the repo root -->
       <img src="logo-rmow.png" class="rmow-logo" alt="Resort Municipality of Whistler logo" />
     </div>
 
@@ -284,14 +297,6 @@
   <main class="layout">
     <div id="viewDiv"></div>
 
-    <div class="legend-panel">
-      <calcite-panel heading="Legend" id="legendPanel" collapsible>
-        <div id="legendContent" class="legend-content">
-          Legend will appear here.
-        </div>
-      </calcite-panel>
-    </div>
-
     <div class="info-panel">
       <calcite-panel heading="Layer Details" id="infoPanel" closable>
       </calcite-panel>
@@ -302,17 +307,14 @@
       </calcite-panel>
     </div>
 
-    <calcite-modal id="infoModal" aria-labelledby="infoModalTitle" scale="m" width="m">
-      <div slot="header" id="infoModalTitle">Layer info</div>
-      <div slot="content" id="infoModalContent"></div>
-    </calcite-modal>
-
-    <!-- LGeo logo watermark (LGeo-logo_vert.png in repo root) -->
     <img src="LGeo-logo_vert.png" alt="LGeo logo" class="lgeo-logo" />
   </main>
 
-  <!-- App logic -->
-  <script src="app.js"></script>
+  <script>
+    require(["app/app"], function (app) {
+      app.start();
+    });
+  </script>
 </body>
 
 </html>

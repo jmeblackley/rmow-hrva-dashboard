@@ -1,0 +1,13 @@
+<!--?xml version="1.0" encoding="UTF-8"?-->
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="Hospital">
+
+  <!-- White circular background -->
+  <circle cx="32" cy="32" r="30" fill="#ffffff" stroke="#c62828" stroke-width="3"></circle>
+
+  <!-- Medical cross (vertical) -->
+  <rect x="28" y="16" width="8" height="32" rx="2" fill="#c62828"></rect>
+
+  <!-- Medical cross (horizontal) -->
+  <rect x="16" y="28" width="32" height="8" rx="2" fill="#c62828"></rect>
+
+</svg>
