@@ -2,7 +2,7 @@
 const BASEMAP_ITEM_ID = "a7dd522d5f374ef3840d2dc35c83b7ea"; // 
 const ALT_BASEMAP_ITEM_ID = "17737d53d01845c1bf0af57a796db7b9"; // Colin's for underlay
 const OVERLAY_ITEM_ID = "20e707c910c1493fa33818c4fe835f86"; // Merged overlay polygons
-const WB_BOUNDARY_ITEM_ID = "04ee7fab5a204ceebadfe539d66ce361";
+const WB_BOUNDARY_ITEM_ID = "088f30ca3b0e4e3db3cec1acdb9649ba";
 const BUILDINGS_ITEM_ID = "b302800be04844b485800c5997d74766";
 const ROADS_ITEM_ID = "???"; // Upload struggles
 
@@ -25,6 +25,11 @@ const NEIGHBOURHOOD_ITEM_ID = "eaaf9354f8ce4c8588e29f1137667cde"; // sublayer 12
 const DIKES_LAYER_ITEM_ID = "6ce26b152302474281495a081ee7e4b0";
 const FLOOD_OUTLINE_ITEM_ID = "39c5ebf72e18404eb39e6cf8399e3f0c";
 
+const FOREST_HABITATS_ITEM_ID = "537f1db1e8b145e59fb2f2710603e4f3";
+const GRIZZLY_HABITATS_ITEM_ID = "7943fc0eb5814f23b08adae9095134dc";
+const AQUATIC_HABITATS_ITEM_ID = "fd3bf923e98f4c698300a0cc25fffc0e";
+const PARKS_ITEM_ID = "7b650524b5794f68a66b34ad96e89f8b";
+
 // ---------------------------------------------------------------------------
 //                      Points Layer Identifier
 // ---------------------------------------------------------------------------
@@ -36,6 +41,7 @@ const FLOOD_OUTLINE_ITEM_ID = "39c5ebf72e18404eb39e6cf8399e3f0c";
 // (16ccd4ff9fe3428690c776202ff4a5c7), which prevented the features from
 // loading; this patch corrects that mistake.
 const POINTS_ITEM_ID = NEIGHBOURHOOD_ITEM_ID;
+const CRITICAL_ITEM_ID = "d9ab1c0cce584956859a34ddb10f34fc";
 
 // ---------------------------------------------------------------------------
 //                      Vulnerability Layer Identifier
@@ -73,6 +79,11 @@ const palBlues5 = ["#eff3ff", "#bdd7e7", "#6baed6", "#3182bd", "#08519c"]; // ch
 const palReds5 = ["#fee5d9", "#fcae91", "#fb6a4a", "#de2d26", "#a50f15"]; // low income
 const palGreens5 = ["#edf8e9", "#bae4b3", "#74c476", "#31a354", "#006d2c"]; // living alone
 const palOranges5 = ["#feedde", "#fdbe85", "#fd8d3c", "#e6550d", "#a63603"]; // renters
+
+// Environmental colors
+const envForestGreen = "#1f4d2b";
+const envTanGreen = "#8a9b5a";
+const envTeal = "#1b8a8f";
 
 const imageryColorbars = {
   Smoke: {
@@ -1229,6 +1240,20 @@ require([
     return [r, g, b, a];
   }
 
+  function makeEnvPolygonRenderer(fillHex, outlineHex = "rgba(0,0,0,0.55)") {
+    return {
+      type: "simple",
+      symbol: {
+        type: "simple-fill",
+        color: fillHex, // can be hex or rgba()
+        outline: {
+          color: outlineHex,
+          width: 1.2
+        }
+      }
+    };
+  }
+
   // Wraps a symbol in a simple renderer
   // Used for single-symbol point layers
   function makeSimpleRenderer(symbol) {
@@ -1306,10 +1331,10 @@ require([
   // ============================ CRITICAL INFRASTRUCTURE =============================
   const criticalInfrastructureLayer = new FeatureLayer({
     portalItem: {
-      id: POINTS_ITEM_ID
+      id: CRITICAL_ITEM_ID
     },
-    layerId: 4,
-    title: "Critical Infrastructure",
+    layerId: 1,
+    title: "RMOW Critical Infrastructure",
     visible: false,
     opacity: 1,
     popupEnabled: true,
@@ -1409,6 +1434,53 @@ require([
     maxScale: 0
   });
 
+  // ============================================================================
+  //                        ENVIRONMENTAL LAYER DEFINITIONS
+  // ============================================================================
+
+  const forestHabitatsLayer = new FeatureLayer({
+    portalItem: { id: FOREST_HABITATS_ITEM_ID },
+    title: "Forest Habitats",
+    opacity: 0.5,
+    visible: false,
+    popupEnabled: true, // or false if you don't want clicks
+    renderer: makeEnvPolygonRenderer(envForestGreen)
+  });
+
+  const grizzlyHabitatsLayer = new FeatureLayer({
+    portalItem: { id: GRIZZLY_HABITATS_ITEM_ID },
+    title: "Grizzly habitats",
+    opacity: 0.5,
+    visible: false,
+    popupEnabled: true,
+    renderer: makeEnvPolygonRenderer(envTanGreen)
+  });
+
+  const aquaticHabitatsLayer = new FeatureLayer({
+    portalItem: { id: AQUATIC_HABITATS_ITEM_ID },
+    title: "Aquatic habitats",
+    opacity: 0.5,
+    visible: false,
+    popupEnabled: true,
+    renderer: makeEnvPolygonRenderer(envTeal)
+  });
+
+  // ============================ PARKS =============================
+  const parksLayer = new FeatureLayer({
+    portalItem: { id: PARKS_ITEM_ID },
+    title: "Parks",
+    opacity: 1,
+    visible: false,
+    popupEnabled: true
+  });
+
+
+  // // Optional: suppress Esri legend titles if they sneak in anywhere (your custom
+  // // legend doesn't need these, but harmless either way)
+  // forestHabitatsLayer.renderer.legendOptions = { title: " " };
+  // grizzlyHabitatsLayer.renderer.legendOptions = { title: " " };
+  // aquaticHabitatsLayer.renderer.legendOptions = { title: " " };
+
 
   // ============================================================================
   //                        COMMUNITY CONTEXT LAYERS
@@ -1421,6 +1493,16 @@ require([
       id: ROADS_ITEM_ID
     },
     title: "Roads Overlay",
+    opacity: 1,
+    visible: false,
+    popupEnabled: false
+  });
+
+  // ============================ WB BOUNDARY =============================
+  // Keep AGOL symbology by NOT providing a renderer.
+  const wbBoundaryLayer = new FeatureLayer({
+    portalItem: { id: WB_BOUNDARY_ITEM_ID },
+    title: "Watershed Boundary",
     opacity: 1,
     visible: false,
     popupEnabled: false
@@ -1721,6 +1803,7 @@ require([
 
     // context
     neighbourhoodsLayer,
+    wbBoundaryLayer,
     // roadsLayer,
     buildingsLayer,
     rmowBoundaryLayer,
@@ -1740,6 +1823,12 @@ require([
     // vulnerability
     ...vulnerabilityLayers,
     vulnerabilityOutlineLayer,
+
+    // environmental
+    parksLayer,
+    forestHabitatsLayer,
+    grizzlyHabitatsLayer,
+    aquaticHabitatsLayer,
 
     // flood
     dikesLayer,
@@ -1827,7 +1916,12 @@ require([
       hideFromLegend: true
     },
     // { id: "roadsToggle", layers: [roadsLayer], label: "Roads Overlay" },
-
+    {
+      id: "wbBoundaryToggle",
+      layers: [wbBoundaryLayer],
+      label: "Resort Recreation Area",
+      hideFromLegend: true
+    },
     {
       id: "criticalToggle",
       layers: [criticalInfrastructureLayer],
@@ -1866,12 +1960,28 @@ require([
     ]
   },
   {
-    category: "Air Quality",
+    category: "Flooding",
     items: [{
-      id: "smokeToggle",
-      layers: [smokeLayer],
-      label: "3-year Smoke PM2.5 Exceedance Days"
-    }]
+      id: "dikesToggle",
+      layers: [dikesLayer],
+      label: "Flood Protection Dikes"
+    },
+    {
+      id: "floodExtentToggle",
+      layers: [floodExtentLayer],
+      label: "Flood Extent Outline"
+    },
+    {
+      id: "floodToggle",
+      layers: [floodLayer],
+      label: "Clear-water Flood Hazard (200-year event)"
+    },
+    {
+      id: "debrisFloodToggle",
+      layers: [debrisFloodLayer],
+      label: "Debris Flood Hazard (200-year event)"
+    }
+    ]
   },
   {
     category: "Landslide",
@@ -1912,47 +2022,58 @@ require([
     ]
   },
   {
-    category: "Extreme Heat",
-    items: [{
-      id: "lstToggle",
-      layers: [lstLayer],
-      label: "Extreme Heat Hazard"
-    }]
-  },
-  {
-    category: "Drought",
-    items: [{
-      id: "ndviToggle",
-      layers: [ndviLayer],
-      label: "Drought Susceptibility"
-    }]
-  },
-  {
-    category: "Flooding",
-    items: [{
-      id: "dikesToggle",
-      layers: [dikesLayer],
-      label: "Flood Protection Dikes"
-    },
-    {
-      id: "floodExtentToggle",
-      layers: [floodExtentLayer],
-      label: "Flood Extent Outline"
-    },
-    {
-      id: "floodToggle",
-      layers: [floodLayer],
-      label: "Clear-water Flood Hazard (200-year event)"
-    },
-    {
-      id: "debrisFloodToggle",
-      layers: [debrisFloodLayer],
-      label: "Debris Flood Hazard (200-year event)"
-    }
+    category: "Heat and Drought",
+    items: [
+      {
+        id: "lstToggle",
+        layers: [lstLayer],
+        label: "Extreme Heat Hazard"
+      },
+      {
+        id: "ndviToggle",
+        layers: [ndviLayer],
+        label: "Drought Susceptibility"
+      }
     ]
   },
   {
-    category: "Vulnerability Layers",
+    category: "Air Quality",
+    items: [{
+      id: "smokeToggle",
+      layers: [smokeLayer],
+      label: "3-year Smoke PM2.5 Exceedance Days"
+    }]
+  },
+  {
+    category: "Environmental",
+    items: [
+      {
+        id: "parksToggle",
+        layers: [parksLayer],
+        label: "Parks"
+      },
+      {
+        id: "forestHabitatsToggle",
+        layers: [forestHabitatsLayer],
+        label: "High Priority Forest Habitats",
+        legendStyle: "singleRow"
+      },
+      {
+        id: "grizzlyHabitatsToggle",
+        layers: [grizzlyHabitatsLayer],
+        label: "High Priority Grizzly Habitats",
+        legendStyle: "singleRow"
+      },
+      {
+        id: "aquaticHabitatsToggle",
+        layers: [aquaticHabitatsLayer],
+        label: "High Priority Aquatic Habitats",
+        legendStyle: "singleRow"
+      }
+    ]
+  },
+  {
+    category: "Census Indicators",
     items: vulnerabilityConfigs.map(cfg => ({
       id: cfg.id,
       layers: [cfg.layer],
