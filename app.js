@@ -68,7 +68,7 @@ const rockfall = ["#f9eedd00", "#dea183ff", "#cd7C58ff", "#ba5632ff"]
 const debris = ["#44015400", "#48247540", "#41448780", "#355f8dbf", "#2a788eff", "#21918cff", "#22a884ff", "#44bf70ff", "#7ad151ff", "#bddf26ff", "#fde725ff"];
 const dry = ["#543005ff", "#8c510aff", "#bf812dff", "#dfc27dff", "#f6e8c3ff", "#f5f5f500", "#c7eae5ff", "#80cdc1ff", "#35978fff", "#01665eff", "#003c30ff"];
 const floodblue = ["#c6dbef", "#9ecae1", "#6baed6", "#3182bd", "#08519c"];
-
+const debrisfloodblue = ["#c7e6e3", "#9fd3cf", "#6fb7b2", "#3b8f8a", "#0b5f5a"];
 // Sequential five‑class palettes for vulnerability layers (light → dark)
 // These palettes are derived from ColorBrewer (https://colorbrewer2.org/) and
 // provide consistent hues across different categories. Each array contains
@@ -120,13 +120,13 @@ const imageryColorbars = {
     colors: floodblue,
     title: "Clear-water flood depth (200-year)",
     leftLabel: "0\u00A0m",
-    rightLabel: "7.5\u00A0m"
+    rightLabel: "7.7\u00A0m"
   },
   DebrisFlood: {
-    colors: floodblue,
+    colors: debrisfloodblue,
     title: "Debris flood depth (200-year)",
     leftLabel: "0\u00A0m",
-    rightLabel: "7.5\u00A0m" //TODO: CHECK THIS VALUE
+    rightLabel: "10.9\u00A0m"
   }
 };
 
@@ -1104,7 +1104,7 @@ require([
   });
 
   // Shared renderer for flood depth rasters
-  const floodRenderer = {
+  const clearFloodRenderer = {
     type: "raster-stretch",
     stretchType: "standard-deviation",
     numberOfStandardDeviations: 2,
@@ -1123,13 +1123,32 @@ require([
     }
   };
 
+  const debrisFloodRenderer = {
+    type: "raster-stretch",
+    stretchType: "standard-deviation",
+    numberOfStandardDeviations: 2,
+    statistics: [{
+      min: 0.00006103515625,
+      max: 7.69512939453125,
+      avg: 1.1509735879299638,
+      stddev: 0.90648640678161641
+    }],
+    gamma: [0.6],
+    colorRamp: {
+      type: "algorithmic",
+      fromColor: [199, 230, 227, 255],
+      toColor: [11, 95, 90, 255],
+      algorithm: "lab-lch"
+    }
+  };
+
   // ============================ FLOOD DEPTH LAYER =============================
   const floodLayer = new ImageryTileLayer({
     portalItem: {
       id: FLOOD_LAYER_ITEM_ID
     },
     title: "Clear-water Flood hazard (200-year event)",
-    renderer: floodRenderer,
+    renderer: clearFloodRenderer,
     opacity: 1,
     visible: false
   });
@@ -1141,7 +1160,7 @@ require([
       id: DEBRIS_FLOOD_ITEM_ID
     },
     title: "Debris Flood hazard (200-year event)",
-    renderer: floodRenderer,
+    renderer: debrisFloodRenderer,
     opacity: 1,
     visible: false
   });
