@@ -14,6 +14,7 @@ const LST_LAYER_ITEM_ID = "5557e9f89df349809d212d54066ccbeb";
 const FUELBREAKS_LAYER_ITEM_ID = "b7d65560b3514835a47fe541ef31bfb3";
 const FUELMNG_LAYER_ITEM_ID = "b9421a66f7104e47886395fc70e61270";
 const RISKCLS_LAYER_ITEM_ID = "1533a455f7e84c4d916c951a155f797d";
+const FRONTERA_FIRE_ITEM_ID = "c65e72cfd9d94f6894c06d68b68e371c";
 // Updated Threat Class layer ID from dev branch
 const THREATCLS_LAYER_ITEM_ID = "b26943a92ea84cde8264e51b2470f5ca";
 
@@ -25,10 +26,8 @@ const NEIGHBOURHOOD_ITEM_ID = "eaaf9354f8ce4c8588e29f1137667cde"; // sublayer 12
 const DIKES_LAYER_ITEM_ID = "6ce26b152302474281495a081ee7e4b0";
 const FLOOD_OUTLINE_ITEM_ID = "39c5ebf72e18404eb39e6cf8399e3f0c";
 
-const FOREST_HABITATS_ITEM_ID = "537f1db1e8b145e59fb2f2710603e4f3";
-const GRIZZLY_HABITATS_ITEM_ID = "7943fc0eb5814f23b08adae9095134dc";
-const AQUATIC_HABITATS_ITEM_ID = "fd3bf923e98f4c698300a0cc25fffc0e";
-const PARKS_ITEM_ID = "7b650524b5794f68a66b34ad96e89f8b";
+const PRIORITY_HABITATS_ITEM_ID = "8a4213b4eee449eeb4210550586fa445";
+const PARKS_ITEM_ID = "46daf11f3b7e4f0c8c1f1f49bf874b0e"; //"7b650524b5794f68a66b34ad96e89f8b";
 
 // ---------------------------------------------------------------------------
 //                      Points Layer Identifier
@@ -69,6 +68,11 @@ const debris = ["#44015400", "#48247540", "#41448780", "#355f8dbf", "#2a788eff",
 const dry = ["#543005ff", "#8c510aff", "#bf812dff", "#dfc27dff", "#f6e8c3ff", "#f5f5f500", "#c7eae5ff", "#80cdc1ff", "#35978fff", "#01665eff", "#003c30ff"];
 const floodblue = ["#c6dbef", "#9ecae1", "#6baed6", "#3182bd", "#08519c"];
 const debrisfloodblue = ["#c7e6e3", "#9fd3cf", "#6fb7b2", "#3b8f8a", "#0b5f5a"];
+
+
+const fronterathreatcolor = ["#fff7bc", "#fec44f", "#fe9929", "#ec7014", "#cc4c02", "#993404"];
+
+
 // Sequential five‑class palettes for vulnerability layers (light → dark)
 // These palettes are derived from ColorBrewer (https://colorbrewer2.org/) and
 // provide consistent hues across different categories. Each array contains
@@ -127,6 +131,12 @@ const imageryColorbars = {
     title: "Debris flood depth (200-year)",
     leftLabel: "0\u00A0m",
     rightLabel: "10.9\u00A0m"
+  },
+  FronteraFireThreat: {
+    colors: fronterathreatcolor,
+    title: "Frontera Fire Threat",
+    leftLabel: "Low Threat",
+    rightLabel: "High Threat"
   }
 };
 
@@ -832,7 +842,7 @@ require([
 
   // ============================ LAYER PANEL RENDER ==========================
 
-  // Builds the layer panel HTML from your config structure
+  // Builds the layer panel HTML from config
   // Binds listeners after insertion
   function renderLayerControls(config, containerId) {
     const container = document.getElementById(containerId);
@@ -1167,26 +1177,26 @@ require([
   debrisFloodLayer._legendKey = "DebrisFlood";
 
   // ============================ FLOOD EXTENT OUTLINE =============================
-  const floodExtentLayer = new FeatureLayer({
-    portalItem: {
-      id: FLOOD_OUTLINE_ITEM_ID
-    },
-    title: "Flood extent outline",
-    opacity: 1,
-    visible: false,
-    popupEnabled: true,
-    renderer: {
-      type: "simple",
-      symbol: {
-        type: "simple-fill",
-        color: [0, 0, 0, 0],
-        outline: {
-          color: [8, 48, 107, 1],
-          width: 2
-        }
-      }
-    }
-  });
+  // const floodExtentLayer = new FeatureLayer({
+  //   portalItem: {
+  //     id: FLOOD_OUTLINE_ITEM_ID
+  //   },
+  //   title: "Flood extent outline",
+  //   opacity: 1,
+  //   visible: false,
+  //   popupEnabled: true,
+  //   renderer: {
+  //     type: "simple",
+  //     symbol: {
+  //       type: "simple-fill",
+  //       color: [0, 0, 0, 0],
+  //       outline: {
+  //         color: [8, 48, 107, 1],
+  //         width: 2
+  //       }
+  //     }
+  //   }
+  // });
 
 
   // ============================================================================
@@ -1248,6 +1258,33 @@ require([
     popupEnabled: true
   });
 
+  // ============================ FRONTERA FIRE LAYER =============================
+
+    const fronteraRenderer = {
+    type: "raster-stretch",
+    stretchType: "min-max",
+    statistics: [{
+      min: 1,   
+      max: 9,  
+      avg: 0,
+      stddev: 0
+    }],
+    dynamicRangeAdjustment: false,
+    gamma: [0.4],
+    colorRamp: createManualMultipartColorRamp(fronterathreatcolor)
+  };
+
+  const fronteraLayer = new ImageryTileLayer({
+    portalItem: {
+      id: FRONTERA_FIRE_ITEM_ID
+    },
+    title: "Frontera Fire Threat",
+    renderer: fronteraRenderer,
+    opacity: 1,
+    visible: false
+  });
+  fronteraLayer._legendKey = "FronteraFireThreat";
+
 
   // ============================================================================
   //                        COMMUNITY POINTS LAYERS
@@ -1257,20 +1294,6 @@ require([
   // Keeps symbol configs readable
   function rgba(r, g, b, a = 1) {
     return [r, g, b, a];
-  }
-
-  function makeEnvPolygonRenderer(fillHex, outlineHex = "rgba(0,0,0,0.55)") {
-    return {
-      type: "simple",
-      symbol: {
-        type: "simple-fill",
-        color: fillHex, // can be hex or rgba()
-        outline: {
-          color: outlineHex,
-          width: 1.2
-        }
-      }
-    };
   }
 
   // Wraps a symbol in a simple renderer
@@ -1299,7 +1322,6 @@ require([
   }
 
   // Creates a pin-style picture marker with bottom-center anchor
-  // Designed for your svg/pin_* icons
   function makePinMarker({
     url,
     size = 28
@@ -1457,48 +1479,90 @@ require([
   //                        ENVIRONMENTAL LAYER DEFINITIONS
   // ============================================================================
 
-  const forestHabitatsLayer = new FeatureLayer({
-    portalItem: { id: FOREST_HABITATS_ITEM_ID },
-    title: "Forest Habitats",
-    opacity: 0.5,
+  // Priority Habitats: Priority = High | Very High
+  function makePriorityHabitatsRenderer() {
+    return {
+      type: "unique-value",
+      field: "Priority",
+      uniqueValueInfos: [
+        {
+          value: "Very High",
+          label: "Very High",
+          symbol: {
+            type: "simple-fill",
+            color: [140, 0, 0, 0.45],       // tweak
+            outline: { color: [60, 60, 60, 0.7], width: 1.0 }
+          }
+        },
+        {
+          value: "High",
+          label: "High",
+          symbol: {
+            type: "simple-fill",
+            color: [220, 80, 0, 0.40],      // tweak
+            outline: { color: [60, 60, 60, 0.7], width: 1.0 }
+          }
+        }
+      ],
+      // Anything else (null/other strings) gets this symbol
+      defaultSymbol: {
+        type: "simple-fill",
+        color: [0, 0, 0, 0],
+        outline: { color: [0, 0, 0, 0], width: 0 }
+      },
+      defaultLabel: "Other / not classified"
+    };
+  }
+
+
+
+  const priorityHabitatsLayer = new FeatureLayer({
+    portalItem: { id: PRIORITY_HABITATS_ITEM_ID },
+    title: "Priority Habitats",
+    opacity: 0.75,
     visible: false,
-    popupEnabled: true, // or false if you don't want clicks
-    renderer: makeEnvPolygonRenderer(envForestGreen)
+    popupEnabled: true, 
+    definitionExpression: "Priority IN ('High','Very High')",
+    renderer: makePriorityHabitatsRenderer() // FIX RENDERER
   });
 
-  const grizzlyHabitatsLayer = new FeatureLayer({
-    portalItem: { id: GRIZZLY_HABITATS_ITEM_ID },
-    title: "Grizzly habitats",
-    opacity: 0.5,
-    visible: false,
-    popupEnabled: true,
-    renderer: makeEnvPolygonRenderer(envTanGreen)
-  });
+  // const forestHabitatsLayer = new FeatureLayer({
+  //   portalItem: { id: FOREST_HABITATS_ITEM_ID },
+  //   title: "Forest Habitats",
+  //   opacity: 0.5,
+  //   visible: false,
+  //   popupEnabled: true, // or false if you don't want clicks
+  //   renderer: makeEnvPolygonRenderer(envForestGreen)
+  // });
 
-  const aquaticHabitatsLayer = new FeatureLayer({
-    portalItem: { id: AQUATIC_HABITATS_ITEM_ID },
-    title: "Aquatic habitats",
-    opacity: 0.5,
-    visible: false,
-    popupEnabled: true,
-    renderer: makeEnvPolygonRenderer(envTeal)
-  });
+  // const grizzlyHabitatsLayer = new FeatureLayer({
+  //   portalItem: { id: GRIZZLY_HABITATS_ITEM_ID },
+  //   title: "Grizzly habitats",
+  //   opacity: 0.5,
+  //   visible: false,
+  //   popupEnabled: true,
+  //   renderer: makeEnvPolygonRenderer(envTanGreen)
+  // });
+
+  // const aquaticHabitatsLayer = new FeatureLayer({
+  //   portalItem: { id: AQUATIC_HABITATS_ITEM_ID },
+  //   title: "Aquatic habitats",
+  //   opacity: 0.5,
+  //   visible: false,
+  //   popupEnabled: true,
+  //   renderer: makeEnvPolygonRenderer(envTeal)
+  // });
 
   // ============================ PARKS =============================
   const parksLayer = new FeatureLayer({
     portalItem: { id: PARKS_ITEM_ID },
-    title: "Parks",
+    title: "Parks & Conservation Areas",
     opacity: 1,
     visible: false,
     popupEnabled: true
   });
 
 
-  // // Optional: suppress Esri legend titles if they sneak in anywhere (your custom
-  // // legend doesn't need these, but harmless either way)
-  // forestHabitatsLayer.renderer.legendOptions = { title: " " };
-  // grizzlyHabitatsLayer.renderer.legendOptions = { title: " " };
-  // aquaticHabitatsLayer.renderer.legendOptions = { title: " " };
 
 
   // ============================================================================
@@ -1836,6 +1900,7 @@ require([
     fireRiskLayer,
     fireThreatLayer,
     fuelLayer,
+    fronteraLayer,
     lstLayer,
     ndviLayer,
 
@@ -1845,13 +1910,14 @@ require([
 
     // environmental
     parksLayer,
-    forestHabitatsLayer,
-    grizzlyHabitatsLayer,
-    aquaticHabitatsLayer,
+    priorityHabitatsLayer,
+    // forestHabitatsLayer,
+    // grizzlyHabitatsLayer,
+    // aquaticHabitatsLayer,
 
     // flood
     dikesLayer,
-    floodExtentLayer,
+    // floodExtentLayer,
     floodLayer,
     debrisFloodLayer
   ];
@@ -1985,11 +2051,11 @@ require([
       layers: [dikesLayer],
       label: "Flood Protection Dikes"
     },
-    {
-      id: "floodExtentToggle",
-      layers: [floodExtentLayer],
-      label: "Flood Extent Outline"
-    },
+    // {
+    //   id: "floodExtentToggle",
+    //   layers: [floodExtentLayer],
+    //   label: "Flood Extent Outline"
+    // },
     {
       id: "floodToggle",
       layers: [floodLayer],
@@ -2037,6 +2103,11 @@ require([
       id: "fuelToggle",
       layers: [fuelLayer],
       label: "Fire Fuel Types"
+    },
+    {
+      id: "fronteraToggle",
+      layers: [fronteraLayer],
+      label: "Frontera Fire Threat"
     }
     ]
   },
@@ -2069,26 +2140,32 @@ require([
       {
         id: "parksToggle",
         layers: [parksLayer],
-        label: "Parks"
+        label: "Parks & Conservation Areas"
       },
       {
-        id: "forestHabitatsToggle",
-        layers: [forestHabitatsLayer],
-        label: "High Priority Forest Habitats",
-        legendStyle: "singleRow"
+        id: "priorityHabitatsToggle",
+        layers: [priorityHabitatsLayer],
+        label: "Priority Habitats",
+        // legendStyle: "singleRow"
       },
-      {
-        id: "grizzlyHabitatsToggle",
-        layers: [grizzlyHabitatsLayer],
-        label: "High Priority Grizzly Habitats",
-        legendStyle: "singleRow"
-      },
-      {
-        id: "aquaticHabitatsToggle",
-        layers: [aquaticHabitatsLayer],
-        label: "High Priority Aquatic Habitats",
-        legendStyle: "singleRow"
-      }
+      // {
+      //   id: "forestHabitatsToggle",
+      //   layers: [forestHabitatsLayer],
+      //   label: "High Priority Forest Habitats",
+      //   legendStyle: "singleRow"
+      // },
+      // {
+      //   id: "grizzlyHabitatsToggle",
+      //   layers: [grizzlyHabitatsLayer],
+      //   label: "High Priority Grizzly Habitats",
+      //   legendStyle: "singleRow"
+      // },
+      // {
+      //   id: "aquaticHabitatsToggle",
+      //   layers: [aquaticHabitatsLayer],
+      //   label: "High Priority Aquatic Habitats",
+      //   legendStyle: "singleRow"
+      // }
     ]
   },
   {
